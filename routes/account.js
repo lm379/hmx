@@ -3,12 +3,10 @@ var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
 var express = require('express');
 var { getUserInfo } = require('../dataBase/api');
-const app = express.Router();
+var secretKey = require('../utils/secretKey');
+const router = express.Router();
 require('dotenv').config();
-var crypto = require('crypto');
-
-// 生成随机密钥
-const secretKey = crypto.randomBytes(32).toString('hex');
+// var crypto = require('crypto');
 
 // 手机号输入校验
 const checkPhone = (Phone) => {
@@ -79,7 +77,7 @@ const userLogin = (Phone, Username, Email, Password) => {
                 if (err) return reject(err);
                 if (isMatch) {
                     // 生成token
-                    const token = jwt.sign({ User_id: user.User_id, username: user.Username, Role: user.Role }, secretKey, { expiresIn: 3600 });
+                    const token = jwt.sign({ User_id: user.User_id, Username: user.Username, Phone: user.Phone, Email: user.Email, Role: user.Role }, secretKey, { expiresIn: 3600 });
                     resolve({ code: 0, token: token, msg: "登录成功" });
                 } else {
                     reject({ code: 1, msg: "用户名或密码错误" });
@@ -89,26 +87,26 @@ const userLogin = (Phone, Username, Email, Password) => {
     });
 };
 
-app.post('/login', async (req, res, next) => {
+router.post('/login', async (req, res, next) => {
     // const { Phone, Username, Email, Password } = req.body;
     const Phone = req.body.phone;
     const Username = req.body.username;
     const Email = req.body.email;
     const Password = req.body.password;
     if (!Phone && !Username && !Email) {
-        return res.status(400).json({ code: 1, message: 'invalid parameters' });
+        return res.status(400).json({ code: 1, msg: 'invalid parameters' });
     }
     if (!Password) {
-        return res.status(400).json({ code: 1, message: 'invalid password' });
+        return res.status(400).json({ code: 1, msg: 'invalid password' });
     }
     // 判断密码格式是否正确
     if (!checkPassword(Password)) {
-        return res.status(400).json({ code: 1, message: '密码格式错误' });
+        return res.status(400).json({ code: 1, msg: '密码格式错误' });
     }
     // 判断账号是否已注册和输入是否合规
     if (Phone) {
         if (!checkPhone(Phone)) {
-            return res.status(400).json({ code: 1, message: '手机号格式错误' });
+            return res.status(400).json({ code: 1, msg: '手机号格式错误' });
         }
         const data = await getUserInfo(null, Phone, null, null);
         if (data.code === 1) {
@@ -117,7 +115,7 @@ app.post('/login', async (req, res, next) => {
     }
     else if (Email) {
         if (!checkEmail(Email)) {
-            return res.status(400).json({ code: 1, message: '邮箱格式错误' });
+            return res.status(400).json({ code: 1, msg: '邮箱格式错误' });
         }
         const data = await getUserInfo(null, null, Email, null);
         if (data.code === 1) {
@@ -126,7 +124,7 @@ app.post('/login', async (req, res, next) => {
     }
     else if (Username) {
         if (!checkUsername(Username)) {
-            return res.status(400).json({ code: 1, message: '用户名格式错误' });
+            return res.status(400).json({ code: 1, msg: '用户名格式错误' });
         }
         const data = await getUserInfo(null, null, null, Username);
         if (data.code === 1) {
@@ -181,20 +179,20 @@ const userRegister = async (Username, Phone, Email, Password) => {
     });
 };
 
-app.post('/register', async (req, res, next) => {
+router.post('/register', async (req, res, next) => {
     // const { Username, Phone, Email, Password } = req.body;
     const Username = req.body.username;
     const Phone = req.body.phone;
     const Email = req.body.email;
     const Password = req.body.password;
     if (!Username) {
-        return res.status(400).json({ code: 1, message: 'invalid username' });
+        return res.status(400).json({ code: 1, msg: 'invalid username' });
     }
     if (!Phone) {
-        return res.status(400).json({ code: 1, message: 'invalid phone' });
+        return res.status(400).json({ code: 1, msg: 'invalid phone' });
     }
     if (!Password) {
-        return res.status(400).json({ code: 1, message: 'invalid password' });
+        return res.status(400).json({ code: 1, msg: 'invalid password' });
     }
     // 注册
     try {
@@ -250,16 +248,16 @@ const resetPassword = async (Phone, Email, Password) => {
     });
 };
 
-app.post('/reset_password', async (req, res, next) => {
+router.post('/reset_password', async (req, res, next) => {
     // const { Phone, Email, Password } = req.body;
     const Phone = req.body.phone;
     const Email = req.body.email;
     const Password = req.body.password;
     if (!Phone && !Email) {
-        return res.status(400).json({ code: 1, message: 'invalid parameters' });
+        return res.status(400).json({ code: 1, msg: 'invalid parameters' });
     }
     if (!Password) {
-        return res.status(400).json({ code: 1, message: 'invalid password' });
+        return res.status(400).json({ code: 1, msg: 'invalid password' });
     }
 
     // 重置密码
@@ -345,10 +343,10 @@ const ModifyPassword = async (User_id, OldPassword, NewPassword) => {
     };
 }
 
-app.post('/update_user', async (req, res, next) => {
+router.post('/update_user', async (req, res, next) => {
     const token = req.headers['authorization'];
     if (!token) {
-        return res.status(401).json({ code: 1, message: 'invalid token' });
+        return res.status(401).json({ code: 1, msg: 'invalid token' });
     }
     let User_id;
     // 验证token
@@ -357,7 +355,7 @@ app.post('/update_user', async (req, res, next) => {
         // console.log(decoded);
         User_id = decoded.User_id;
     } catch {
-        return res.status(401).json({ code: 1, message: 'invalid token' });
+        return res.status(401).json({ code: 1, msg: 'invalid token' });
     }
 
     // const { ModifyFields, Value, OldPassword, NewPassword } = req.body;
@@ -367,7 +365,7 @@ app.post('/update_user', async (req, res, next) => {
     const NewPassword = req.body.newpassword;
 
     if (!User_id) {
-        return res.status(400).json({ code: 1, message: 'invalid user_id' });
+        return res.status(400).json({ code: 1, msg: 'invalid user_id' });
     }
     if (ModifyFields) {
         try {
@@ -386,15 +384,15 @@ app.post('/update_user', async (req, res, next) => {
             res.status(500).json(err);
         }
     } else {
-        return res.status(400).json({ code: 1, message: 'invalid parameters' });
+        return res.status(400).json({ code: 1, msg: 'invalid parameters' });
     }
 });
 
 // 注销账号
-app.post('/delete_account', async (req, res, next) => {
+router.post('/delete_account', async (req, res, next) => {
     const token = req.headers['authorization'];
     if (!token) {
-        return res.status(401).json({ code: 1, message: 'invalid token' });
+        return res.status(401).json({ code: 1, msg: 'invalid token' });
     }
     let User_id;
     // 验证token
@@ -402,11 +400,11 @@ app.post('/delete_account', async (req, res, next) => {
         const decoded = jwt.verify(token, secretKey);
         User_id = decoded.User_id;
     } catch {
-        return res.status(401).json({ code: 1, message: 'invalid token' });
+        return res.status(401).json({ code: 1, msg: 'invalid token' });
     }
 
     if (!User_id) {
-        return res.status(400).json({ code: 1, message: 'invalid user_id' });
+        return res.status(400).json({ code: 1, msg: 'invalid user_id' });
     }
 
     return new Promise((resolve, reject) => {
@@ -422,5 +420,20 @@ app.post('/delete_account', async (req, res, next) => {
     });
 });
 
-module.exports = app;
-module.exports.secretKey = secretKey;
+router.post('/login_confirm', async (req, res, next) => {
+    const token = req.headers['authorization'];
+    if (!token) {
+        return res.status(401).json({ code: 1, msg: 'invalid token' });
+    }
+    try {
+        const decoded = jwt.verify(token, secretKey);
+        const User_id = decoded.User_id;
+        const Username = decoded.Username;
+        const Role = decoded.Role;
+        res.json({ code: 0, User_id, Username, Role, msg: "登录成功" });
+    } catch {
+        return res.status(401).json({ code: 1, msg: 'invalid token' });
+    }
+});
+
+module.exports = router;

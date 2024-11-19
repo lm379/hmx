@@ -2,6 +2,7 @@ var bodyParser = require('body-parser');
 var STS = require('../cos/sdk/sts');
 var express = require('express');
 var crypto = require('crypto');
+router = express.Router();
 
 // 配置参数
 var config = {
@@ -34,12 +35,12 @@ var config = {
 
 
 // 创建临时密钥服务
-var app = express();
-app.use(bodyParser.json());
+var router = express();
+router.use(bodyParser.json());
 
 // 支持跨域访问
-app.all('*', function (req, res, next) {
-    res.header('Content-Type', 'application/json');
+router.all('*', function (req, res, next) {
+    res.header('Content-Type', 'routerlication/json');
     res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:88');
     res.header('Access-Control-Allow-Headers', 'origin,accept,content-type');
     if (req.method.toUpperCase() === 'OPTIONS') {
@@ -50,11 +51,11 @@ app.all('*', function (req, res, next) {
 });
 
 // 临时密钥接口
-app.all('/sts', function (req, res, next) {
+router.all('/sts', function (req, res, next) {
 
     // 获取临时密钥
     var shortBucketName = config.bucket.substr(0, config.bucket.lastIndexOf('-'));
-    var appId = config.bucket.substr(1 + config.bucket.lastIndexOf('-'));
+    var routerId = config.bucket.substr(1 + config.bucket.lastIndexOf('-'));
     var policy = {
         'version': '2.0',
         'statement': [{
@@ -62,7 +63,7 @@ app.all('/sts', function (req, res, next) {
             'effect': 'allow',
             'principal': { 'qcs': ['*'] },
             'resource': [
-                'qcs::cos:' + config.region + ':uid/' + appId + ':prefix//' + appId + '/' + shortBucketName + '/' + config.allowPrefix,
+                'qcs::cos:' + config.region + ':uid/' + routerId + ':prefix//' + routerId + '/' + shortBucketName + '/' + config.allowPrefix,
             ],
             // condition生效条件，关于 condition 的详细设置规则和COS支持的condition类型可以参考https://cloud.tencent.com/document/product/436/71306
             // 'condition': {
@@ -86,13 +87,13 @@ app.all('/sts', function (req, res, next) {
     });
 });
 
-app.all('*', function (req, res, next) {
+router.all('*', function (req, res, next) {
     res.writeHead(404);
     res.send({ code: 404, codeDesc: 'PageNotFound', message: '404 page not found' });
 });
 
-module.exports = app;
+module.exports = router;
 // 启动签名服务
-// app.listen(port, () => {
+// router.listen(port, () => {
 //     console.log(`Server is running on host: http://127.0.0.1:${port}`);
 // });

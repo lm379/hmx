@@ -14,25 +14,25 @@ const ListUsers = () => {
 // 获取用户信息
 const getUserInfo = (User_id, Phone, Email, Username) => {
     return new Promise((resolve, reject) => {
-        let query = "SELECT * FROM `users` WHERE TRUE ";
+        let query = "SELECT * FROM `users` WHERE TRUE";
         let params = [];
         if (User_id) {
-            query += `AND User_id = ?`;
+            query += ` AND User_id = ?`;
             params.push(User_id);
         }
 
         if (Phone) {
-            query += `AND Phone = ?`;
+            query += ` AND Phone = ?`;
             params.push(Phone);
         }
 
         if (Email) {
-            query += `AND Email = ?`;
+            query += ` AND Email = ?`;
             params.push(Email);
         }
 
         if (Username) {
-            query += 'AND Username = ?';
+            query += ' AND Username = ?';
             params.push(Username);
         }
 
@@ -43,7 +43,6 @@ const getUserInfo = (User_id, Phone, Email, Username) => {
         connection.query(query, params, (err, data) => {
             if (err) return reject(err);
             if (data.length === 0) return reject(resolve({ code: 1, msg: "用户不存在" }));
-            // console.log(data[0].Status);
             if (data[0].Status === 'Deleted') return reject(resolve({ code: 1, msg: "用户已注销" }));
             return resolve({ code: 0, data: data });
         });
@@ -53,7 +52,7 @@ const getUserInfo = (User_id, Phone, Email, Username) => {
 // 列出曲目列表
 const ListOpera = () => {
     return new Promise((resolve, reject) => {
-        connection.query("SELECT * FROM `opera`", (err, data) => {
+        connection.query("SELECT *, (SELECT COUNT(*) FROM `favorites`  WHERE favorites.Opera_id = opera.Opera_id) AS Favorite_count FROM `opera`", (err, data) => {
             if (err) return reject(err);
             if (data.length === 0) return reject(resolve({ msg: "曲目列表为空" }));
             return resolve({ code: 0, data: data });
@@ -297,6 +296,42 @@ const deleteFavorite = (User_id, Opera_id) => {
     });
 }
 
+// 获取菜单: 按年代分类
+const getMenu = () => {
+    let query = "SELECT CASE WHEN Release_date < '1950-01-01' THEN 'Before 1950' WHEN Release_date BETWEEN '1950-01-01' AND '2000-12-31' THEN '1950-2000' ELSE 'After 2000' END AS category, COUNT(*) AS count FROM opera GROUP BY category";
+    return new Promise((resolve, reject) => {
+        connection.query(query, (err, data) => {
+            if (err) return reject(err);
+            if (data.length === 0) return reject(resolve({ code: 1, msg: "菜单为空" }));
+            return resolve({ code: 0, data: data });
+        })
+    });
+}
+
+// 搜索
+const search = (Keywords, Table, Field, Column) => {
+    let query = `SELECT `;
+    // 参数校验
+    if (!Keywords || !Table || !Field || !Array.isArray(Column) || Column.length === 0) {
+        throw { code: 1, msg: "invalid parameters" };
+    }
+    // 动态构建SQL语句
+    Column.forEach((item, index) => {
+        query += `${item}`;
+        if (index !== Column.length - 1) {
+            query += `, `;
+        }
+    });
+    query += ` FROM ${Table} WHERE LOCATE(?, ${Field}) > 0`;
+    return new Promise((resolve, reject) => {
+        connection.query(query, [Keywords], (err, data) => {
+            if (err) return reject(err);
+            if (data.length === 0) return reject(resolve({ code: 1, msg: "搜索结果为空" }));
+            return resolve({ code: 0, data: data });
+        });
+    });
+}
+
 module.exports = {
     ListUsers,
     ListOpera,
@@ -312,5 +347,7 @@ module.exports = {
     deleteOpera,
     updateOpera,
     addFavorite,
-    deleteFavorite
+    deleteFavorite,
+    getMenu,
+    search
 }
