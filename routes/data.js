@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { ListUsers, ListOpera, getUserInfo, getOperaInfo, getFavorites, getPlayHistory, getPlayCount, getComments, postComment, addOpera, deleteOpera, updateOpera, addFavorite, deleteFavorite, getMenu, search } = require('../dataBase/api');
+const { ListUsers, ListOpera, getUserInfo, getOperaInfo, getFavorites, getPlayHistory, getPlayCount, getComments, postComment, addOpera, deleteOpera, updateOpera, addFavorite, deleteFavorite, getMenu, search, getCommentsCount } = require('../dataBase/api');
 const jwt = require('jsonwebtoken');
 const secretKey = require('../utils/secretKey');
 
@@ -179,6 +179,21 @@ router.get('/get_comments', async (req, res, next) => {
     }
 });
 
+router.get('/get_comments_count', async (req, res, next) => {
+    const params = req.query.params;
+    const value = req.query.value;
+    if (!params || !value) {
+        return res.status(400).json({ code: 1, msg: 'invalid parameters' });
+    }
+    try {
+        const data = await getCommentsCount(params, value);
+        res.json(data);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ code: 1, msg: 'query failed' });
+    }
+});
+
 // 发表评论
 router.post('/post_comment', async (req, res, next) => {
     const token = req.headers['authorization'];
@@ -202,7 +217,7 @@ router.post('/post_comment', async (req, res, next) => {
         res.json(data);
     } catch (err) {
         console.error(err); // 记录错误日志
-        res.status(500).json({ code: 1, msg: 'post failed' });
+        res.status(500).json({ code: 1, msg: 'unknown error' });
     }
 });
 

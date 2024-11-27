@@ -145,18 +145,18 @@ const getPlayCount = () => {
 // 根据用户或曲目列出所有评论
 const getComments = (Opera_id, User_id, Comment_id) => {
     return new Promise((resolve, reject) => {
-        let query = "SELECT * FROM `comments` WHERE TRUE ";
+        let query = "SELECT comments.*, users.Username,Users.Icon FROM `comments` JOIN `users` ON comments.user_id = users.user_id WHERE TRUE ";
         let params = [];
         if (Opera_id) {
-            query += `AND Opera_id = ${Opera_id}`;
+            query += `AND Opera_id = ?`;
             params.push(Opera_id);
         }
         if (User_id) {
-            query += `AND User_id = ${User_id}`;
+            query += `AND User_id = ?`;
             params.push(User_id);
         }
         if (Comment_id) {
-            query += `AND Comment_id = ${Comment_id}`;
+            query += `AND Comment_id = ?`;
             params.push(Comment_id);
         }
         if (params.length === 0) {
@@ -172,11 +172,36 @@ const getComments = (Opera_id, User_id, Comment_id) => {
     });
 }
 
+// 统计评论数量
+const getCommentsCount = (params, value) => {
+    return new Promise((resolve, reject) => {
+        let query = "SELECT ";
+        // 参数校验
+        if (isNaN(value)) {
+            return reject(new Error("参数错误"));
+        }     
+        if (params === 'Opera_id' || params === 'User_id' || params === 'Comment_id') {
+            query += `${params}, Count(*) AS Comments_count FROM \`comments\` WHERE ${params} = ? GROUP BY ${params} `;
+        } else {
+            return reject(new Error("参数错误"));
+        }
+        
+        connection.query(query, [value], (err, data) => {
+            if (err) return reject(err);
+            if (data.length === 0) {
+                const valueNum = JSON.parse(value);
+                return resolve({ code: 0, data: { [params]: valueNum, Comments_count: 0 } });
+            }
+            return resolve({ code: 0, data: data[0] });
+        });
+    });
+}
+
 // 发表评论
 const postComment = (User_id, Opera_id, Comment_text) => {
     return new Promise((resolve, reject) => {
         connection.query("INSERT INTO `comments` (User_id, Opera_id, Comment_text) VALUES (?, ?, ?)", [User_id, Opera_id, Comment_text], (err, data) => {
-            if (err) return reject({ code: 1, msg: "Failed" });
+            if (err) return reject({ code: 1, msg: err });
             return resolve({ code: 0, msg: "Success" });
         });
     });
@@ -349,5 +374,6 @@ module.exports = {
     addFavorite,
     deleteFavorite,
     getMenu,
-    search
+    search,
+    getCommentsCount
 }
