@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { ListUsers, ListOpera, getUserInfo, getOperaInfo, getFavorites, getPlayHistory, getPlayCount, getComments, postComment, addOpera, deleteOpera, updateOpera, addFavorite, deleteFavorite, getMenu, search, getCommentsCount } = require('../dataBase/api');
+const { ListUsers, ListOpera, getUserInfo, getOperaInfo, getFavorites, getPlayHistory, getPlayCount, getComments, postComment, addOpera, deleteOpera, updateOpera, addFavorite, deleteFavorite, getMenu, search, getCommentsCount, getAiResult } = require('../dataBase/api');
 const jwt = require('jsonwebtoken');
 const secretKey = require('../utils/secretKey');
 
@@ -415,6 +415,7 @@ router.post('/delete_favorite', async (req, res, next) => {
     if (!Opera_id) {
         return res.status(400).json({ code: 1, msg: 'invalid parameters' });
     }
+    Opera_id = parseInt(Opera_id); // 转换为整数
     // 检查是否存在该戏曲
     let opera = await getOperaInfo(Opera_id, null);
     if (opera.code !== 0) {
@@ -485,6 +486,21 @@ router.get('/search', async (req, res, next) => {
     } catch (err) {
         console.error(err); // 记录错误日志
         res.status(500).json({ code: 1, msg: 'search failed' });
+    }
+});
+
+// 获取AI生成的结果
+router.get('/get_ai_result', async (req, res, next) => {
+    const Opera_id = req.query.opera_id;
+    if (!Opera_id) {
+        return res.status(400).json({ code: 1, msg: 'invalid parameters' });
+    }
+    try {
+        const data = await getAiResult(Opera_id);
+        res.json(data);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ code: 1, msg: 'query failed' });
     }
 });
 

@@ -85,14 +85,14 @@ const getOperaInfo = (Opera_id, Opera_title) => {
 
 // 获取收藏夹信息
 const getFavorites = (User_id, Opera_id) => {
-    let query = "SELECT * FROM `favorites` WHERE TRUE ";
+    let query = "SELECT f.Favorite_id, f.User_id, f.Opera_id, f.Created_time, o.Opera_title, o.Avatar FROM `favorites` f JOIN `opera` o ON o.Opera_id = f.Opera_id WHERE TRUE ";
     let params = [];
     if (User_id) {
-        query += `AND User_id = ? `;
+        query += `AND f.User_id = ? `;
         params.push(User_id);
     }
     if (Opera_id) {
-        query += `AND Opera_id = ? `;
+        query += `AND f.Opera_id = ? `;
         params.push(Opera_id);
     }
     if (params.length === 0) {
@@ -357,6 +357,16 @@ const search = (Keywords, Table, Field, Column) => {
     });
 }
 
+const getAiResult = (Opera_id) => {
+    return new Promise((resolve, reject) => {
+        connection.query("SELECT * FROM `aidata` WHERE Opera_id = ?", [Opera_id], (err, data) => {
+            if (err) return reject(err);
+            if (data.length === 0) return reject(resolve({ code: 1, msg: "数据正在生成中" }));
+            return resolve({ code: 0, data: data });
+        });
+    });
+}
+
 module.exports = {
     ListUsers,
     ListOpera,
@@ -375,5 +385,6 @@ module.exports = {
     deleteFavorite,
     getMenu,
     search,
-    getCommentsCount
+    getCommentsCount,
+    getAiResult,
 }
