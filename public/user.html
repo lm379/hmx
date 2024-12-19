@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <title>个人信息</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 引入页面样式 -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style_user.css">
+    <link rel="stylesheet" href="remixicon/remixicon.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- 顶栏 -->
+        <div class="TopBar">
+            <div class="title" @click="jump" data-page="index">黄梅戏文化平台</div>
+            <div class="flex-1"></div>
+            <!-- 用户工具栏 -->
+            <div class="ToolBar">
+                <!-- 用户头像与昵称 -->
+                <div class="user" @click="jump" data-page="user">
+                    <img class="avatar" :src="UserInfo.Icon">
+                    <div>{{UserInfo.Username}}</div>
+                </div>
+
+                <button @click="logout">退出</button>
+            </div>
+
+        </div>
+
+        <div class="Content Home">
+            <!-- 分类菜单 -->
+            <div class="Navigation">
+                <div class="Menu" v-for="Item in Menu" @click="switchMenu" :data-menu="Item.Title"><i
+                        :class="Item.Icon"></i>
+                    {{Item.Title}}</div>
+            </div>
+            <!-- 内容 -->
+            <div class="Product flex-1">
+                <div class="subtitle">{{MenuActive}}</div>
+
+                <div v-if="MenuActive == '个人信息'" class="userinfo">
+                    <label for="imgFile">
+                        <img class="avatar" :src="UserInfo.Icon" v-if="NewUserAvatar.Img == null">
+                        <img class="avatar" :src="NewUserAvatar.Img" v-else>
+                    </label>
+                    <input id="imgFile" class="hidden" type="file" accept="image/*" @change="changeImg">
+
+                    <br>
+                    <div class="InputGroup Margin">
+                        <span><i class="ri-user-line"></i></span>
+                        <input type="text" placeholder="您的昵称" v-model="NewUserInfo.Username">
+                    </div>
+                    <div class="InputGroup Margin">
+                        <span><i class="ri-user-line"></i></span>
+                        <select v-model="NewUserInfo.Sex">
+                            <option placeholder="">请选择性别</option>
+                            <option value="Male">男</option>
+                            <option value="Female">女</option>
+                            <option value="Other">其他</option>
+                        </select>
+                    </div>
+                    <div class="InputGroup Margin">
+                        <span><i class="ri-phone-line"></i></span>
+                        <input type="text" placeholder="您的电话号码" v-model="NewUserInfo.Phone">
+                    </div>
+                    <div class="InputGroup Margin">
+                        <span><i class="ri-mail-line"></i></span>
+                        <input type="text" placeholder="您的邮箱地址" v-model="NewUserInfo.Email">
+                    </div>
+                    <div class="Btn_Frame Margin">
+                        <button class="Btn_Confirm" @click="setUserInfo">修改信息</button>
+                    </div>
+                    <br><br>
+                    <div class="InputGroup Margin">
+                        <span><i class="ri-lock-line"></i></span>
+                        <input type="password" placeholder="请输入原密码" v-model="NewUserInfo.OldPassword">
+                    </div>
+                    <div class="InputGroup Margin">
+                        <span><i class="ri-lock-line"></i></span>
+                        <input type="password" placeholder="请输入新密码" v-model="NewUserInfo.NewPassword">
+                    </div>
+
+                    <div class="Btn_Frame Margin">
+                        <button class="Btn_Confirm" @click="setPassword">修改密码</button>
+                    </div>
+                </div>
+
+                <div v-if="MenuActive == '我的收藏'">
+                    <div v-if="FollowList.length != 0">
+                        <div class="follow head">
+                            <div></div>
+                            <div>曲目</div>
+                            <div>收藏时间</div>
+                        </div>
+                        <div :class="Item.Del ? 'follow del' : 'follow'" v-for="Item in FollowList">
+                            <img :src="Item.Avatar">
+                            <div>{{Item.Opera_title}}</div>
+                            <div>{{formatDate(Item.Created_time)}}</div>
+                            <div class="btn_del" :data-id="Item.Opera_id" @click="delFollow">取消收藏</div>
+                            <div class="deleted" v-if="Item.Del">该曲目已经被删除</div>
+                        </div>
+                    </div>
+                    <div v-else>您还没有收藏戏曲哦</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 引入vue.js -->
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/upload.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/user.js"></script>
+</body>
+
+</html>

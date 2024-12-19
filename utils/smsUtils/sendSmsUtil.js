@@ -3,7 +3,6 @@ const Dysmsapi20170525 = require('@alicloud/dysmsapi20170525');
 const OpenApi = require('@alicloud/openapi-client');
 const Util = require('@alicloud/tea-util');
 const Tea = require('@alicloud/tea-typescript');
-const { getVerificationCode } = require('../redisUtils/redisAccountUtil');
 
 class Client {
 
@@ -47,10 +46,10 @@ async function sendSms(phoneNumbers, Code) {
             phoneNumbers: phoneNumbers,
             templateParam: templateParam
         });
-        return { code: 0, message: "短信验证码发送成功，请注意查收" };
+        return { code: 0, msg: "短信验证码发送成功，请注意查收" };
     } catch (error) {
         console.log(error);
-        return { code: 1, message: "短信验证码发送失败" + error.message };
+        return { code: 1, msg: "短信验证码发送失败" + error.message };
     }
 }
 

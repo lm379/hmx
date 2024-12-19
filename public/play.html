@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        {{pageTitle}}
+    </title>
+    <link rel="stylesheet" href="css/plyr.css" />
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style_play.css">
+    <link rel="stylesheet" href="remixicon/remixicon.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- 顶栏 -->
+        <div class="TopBar">
+            <div class="title" @click="jump" data-page="index">黄梅戏文化平台</div>
+            <div class="flex-1"></div>
+            <!-- 搜索栏 -->
+            <div class="InputGroup SearchBar">
+                <span><i class="ri-search-2-line"></i></span>
+                <input type="text" placeholder="搜索戏曲" @input="search">
+            </div>
+
+            <!-- 用户工具栏 -->
+            <!-- 已登录情况 -->
+            <div class="ToolBar" v-if="UserInfo != null">
+                <!-- 用户头像与昵称 -->
+                <div class="user" @click="jump" data-page="user">
+                    <img class="avatar" :src="UserInfo.Icon">
+                    <div>{{UserInfo.Username}}</div>
+                </div>
+                <button @click="logout">退出</button>
+            </div>
+            <!-- 未登录情况 -->
+            <div class="ToolBar" v-else>
+                <button @click="jump" data-page="signup">注册</button>
+                <button class="login" @click="jump" data-page="login">登录</button>
+            </div>
+        </div>
+
+        <!-- 主容器 -->
+        <div class="Content Home">
+            <div class="Product flex-1">
+                <div v-if="ItemList.length != 0">
+                    <div class="subtitle">
+                        <h1>{{ItemList.Opera_title + " - " + ItemList.Artist}}</h1>
+                    </div>
+                    <div class="detail-list">
+                        <div class="view-item"></div>
+                        <div class="Release-data"> {{formatDate(ItemList.Release_date)}}</div>
+                    </div>
+                    <br>
+                    <div class="plyr-container">
+                        <video id="player" playsinline controls :data-poster="ItemList.Avatar">
+                            <source :src="ItemList.Video_path" type="video/mp4">
+                        </video>
+                    </div>
+                    <br>
+                    <div class="video-desc-container">
+                        <div class="basic-desc-info">
+                            <span class="desc-info-text"> {{ItemList.Description}} </span>
+                        </div>
+                    </div>
+                    <br>
+                    <!-- 评论容器 -->
+                    <div id="comments" class="comments-container">
+                        <div id="navber">
+                            <div id="title">
+                                <h2>评论</h2>
+                                <div id="count" class="inline"> {{CommentsCount}} </div>
+                            </div>
+                        </div>
+                        <br>
+                        <!-- 发表评论 -->
+                        <div id="comment-area">
+                            <div id="body">
+                                <div id="editor" class="active">
+                                    <div id="input" class="input-box">
+                                        <div class="brt-root">
+                                            <div class="placeholder">来发表一条评论吧~</div>
+                                            <div class="editor" contenteditable="true" @input="handleInput"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="footer">
+                                <div id="pub">
+                                    <button @click="postComment">发布</button>
+                                </div>
+                                <div id="ai">
+                                    <button @click="getAiResult" >AI小助手</button>
+                                </div>
+                            </div>
+                            <div v-if="aiResult" class="ai-result">
+                                <!-- <textarea readonly title="AI Result" placeholder="AI Result">{{ aiResult }}</textarea> -->
+                                <div class="aires" contenteditable="false" placeholder="AI Result">{{ aiResult }}</div>
+                            </div>
+                        </div>
+
+                        <!-- 展示评论 -->
+                        <div id="body">
+                            <div v-for="comment in CommentsList" class="comment-item">
+                                <a id="user-avatar">
+                                    <avatar><img :src="comment.Icon"></avatar>
+                                </a>
+                                <div id="main">
+                                    <div id="header">
+                                        <comment-username>{{comment.Username}}</comment-username>
+                                    </div>
+                                    <div id="content">
+                                        <div id="text"><span>{{comment.Comment_text}}</span></div>
+                                    </div>
+                                    <div id="footer">
+                                        <action-buttons>
+                                            <div id="pubdate">{{formatDate(comment.Create_time)}}</div>
+                                        </action-buttons>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div v-else>暂未播放</div>
+            </div>
+        </div>
+
+    </div>
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/plyr.js"></script>
+    <script src="./js/play.js"></script>
+</body>
+
+</html>
