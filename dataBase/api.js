@@ -179,13 +179,13 @@ const getCommentsCount = (params, value) => {
         // 参数校验
         if (isNaN(value)) {
             return reject(new Error("参数错误"));
-        }     
+        }
         if (params === 'Opera_id' || params === 'User_id' || params === 'Comment_id') {
             query += `${params}, Count(*) AS Comments_count FROM \`comments\` WHERE ${params} = ? GROUP BY ${params} `;
         } else {
             return reject(new Error("参数错误"));
         }
-        
+
         connection.query(query, [value], (err, data) => {
             if (err) return reject(err);
             if (data.length === 0) {
@@ -202,7 +202,7 @@ const postComment = (User_id, Opera_id, Comment_text) => {
     return new Promise((resolve, reject) => {
         connection.query("INSERT INTO `comments` (User_id, Opera_id, Comment_text) VALUES (?, ?, ?)", [User_id, Opera_id, Comment_text], (err, data) => {
             if (err) return reject({ code: 1, msg: err });
-            return resolve({ code: 0, msg: "Success" });
+            return resolve({ code: 0, msg: "成功" });
         });
     });
 }
@@ -211,22 +211,23 @@ const postComment = (User_id, Opera_id, Comment_text) => {
 const deleteComment = (User_id, Comment_id) => {
     return new Promise((resolve, reject) => {
         connection.query("DELETE FROM `comments` WHERE User_id = ? AND Comment_id = ?", [User_id, Comment_id], (err, data) => {
-            if (err) return reject({ code: 1, msg: "Failed" });
-            return resolve({ code: 0, msg: "Success" });
+            if (err) return reject({ code: 1, msg: "失败" });
+            return resolve({ code: 0, msg: "成功" });
         });
     });
 }
 
 // 新增戏曲
-const addOpera = (Opera_title, Artist, Release_date, Duration, Music_path, Video_path, Description) => {
-    if (!Opera_title || !Music_path || !Video_path) {
-        throw { code: 1, msg: "invalid parameters" };
+const addOpera = (Opera_title, Artist, Release_date, Duration, Music_path, Video_path, Description, Avatar) => {
+    if (!Opera_title || !Video_path) {
+        throw { code: 1, msg: "不合法的参数" };
     }
-
+    const cosDomain = process.env.Bucket + '.cos.' + process.env.Region + '.myqcloud.com';
+    Video_path = Video_path.replace(cosDomain, process.env.CDN);
     // 动态构建SQL语句和参数数组
-    let query = "INSERT INTO `opera` (Opera_title, Music_path, Video_path";
-    let params = [Opera_title, Music_path, Video_path];
-    let placeholders = "?, ?, ?";
+    let query = "INSERT INTO `opera` (Opera_title, Video_path";
+    let params = [Opera_title, Video_path];
+    let placeholders = "?, ?";
     if (Artist) {
         query += ", Artist";
         params.push(Artist);
@@ -247,12 +248,24 @@ const addOpera = (Opera_title, Artist, Release_date, Duration, Music_path, Video
         params.push(Description);
         placeholders += ", ?";
     }
+    if (Music_path) {
+        Music_path = Music_path.replace(cosDomain, process.env.CDN);
+        query += ", Music_path";
+        params.push(Music_path);
+        placeholders += ", ?";
+    }
+    if (Avatar) {
+        Avatar = Avatar.replace(cosDomain, process.env.CDN);
+        query += ", Avatar";
+        params.push(Avatar);
+        placeholders += ", ?";
+    }
 
     query += `) VALUES (${placeholders})`;
     return new Promise((resolve, reject) => {
         connection.query(query, params, (err, data) => {
-            if (err) return reject({ code: 1, msg: "Insert Failed" });
-            return resolve({ code: 0, msg: "Success" });
+            if (err) return reject({ code: 1, msg: "添加失败" });
+            return resolve({ code: 0, msg: "添加成功" });
         });
     });
 }
@@ -260,12 +273,12 @@ const addOpera = (Opera_title, Artist, Release_date, Duration, Music_path, Video
 // 删除戏曲
 const deleteOpera = (Opera_id) => {
     if (!Opera_id) {
-        throw { code: 1, msg: "invalid parameters" };
+        throw { code: 1, msg: "不合法的参数" };
     }
     return new Promise((resolve, reject) => {
         connection.query("DELETE FROM `opera` WHERE Opera_id = ?", [Opera_id], (err, data) => {
-            if (err) return reject({ code: 1, msg: "Failed" });
-            return resolve({ code: 0, msg: "Success" });
+            if (err) return reject({ code: 1, msg: "失败" });
+            return resolve({ code: 0, msg: "成功" });
         });
     });
 }
@@ -273,15 +286,15 @@ const deleteOpera = (Opera_id) => {
 // 修改戏曲信息
 const updateOpera = async (Opera_id, UpdateFields, Value) => {
     if (!Opera_id || !UpdateFields || !Value) {
-        throw { code: 1, msg: "invalid parameters" };
+        throw { code: 1, msg: "不合法的参数" };
     }
     if (UpdateFields !== 'Opera_title' && UpdateFields !== 'Artist' && UpdateFields !== 'Release_date' && UpdateFields !== 'Duration' && UpdateFields !== 'Music_path' && UpdateFields !== 'Video_path' && UpdateFields !== 'Description') {
-        throw { code: 1, msg: "invalid field" };
+        throw { code: 1, msg: "不合法的请求" };
     }
 
     const data = await getOperaInfo(Opera_id, null);
     if (data.code !== 0) {
-        throw { code: 1, msg: "Opera_id not exist" };
+        throw { code: 1, msg: "曲目不存在" };
     }
     let query = "UPDATE `opera` SET ";
     let params = [Value, Opera_id];
@@ -289,8 +302,8 @@ const updateOpera = async (Opera_id, UpdateFields, Value) => {
 
     return new Promise((resolve, reject) => {
         connection.query(query, params, (err, data) => {
-            if (err) return reject({ code: 1, msg: "Failed" });
-            return resolve({ code: 0, msg: "Success" });
+            if (err) return reject({ code: 1, msg: "更新失败" });
+            return resolve({ code: 0, msg: "更新成功" });
         });
     });
 }
@@ -298,12 +311,12 @@ const updateOpera = async (Opera_id, UpdateFields, Value) => {
 // 新增收藏
 const addFavorite = (User_id, Opera_id) => {
     if (!User_id || !Opera_id) {
-        throw { code: 1, msg: "invalid parameters" };
+        throw { code: 1, msg: "不合法的参数" };
     }
     return new Promise((resolve, reject) => {
         connection.query("INSERT INTO `favorites` (User_id, Opera_id) VALUES (?, ?)", [User_id, Opera_id], (err, data) => {
-            if (err) return reject({ code: 1, msg: "Failed" });
-            return resolve({ code: 0, msg: "Success" });
+            if (err) return reject({ code: 1, msg: "失败" });
+            return resolve({ code: 0, msg: "成功" });
         });
     });
 }
@@ -311,25 +324,13 @@ const addFavorite = (User_id, Opera_id) => {
 // 取消收藏
 const deleteFavorite = (User_id, Opera_id) => {
     if (!User_id || !Opera_id) {
-        throw { code: 1, msg: "invalid parameters" };
+        throw { code: 1, msg: "不合法的参数" };
     }
     return new Promise((resolve, reject) => {
         connection.query("DELETE FROM `favorites` WHERE User_id = ? AND Opera_id = ?", [User_id, Opera_id], (err, data) => {
-            if (err) return reject({ code: 1, msg: "Failed" });
-            return resolve({ code: 0, msg: "Success" });
+            if (err) return reject({ code: 1, msg: "失败" });
+            return resolve({ code: 0, msg: "成功" });
         });
-    });
-}
-
-// 获取菜单: 按年代分类
-const getMenu = () => {
-    let query = "SELECT CASE WHEN Release_date < '1950-01-01' THEN 'Before 1950' WHEN Release_date BETWEEN '1950-01-01' AND '2000-12-31' THEN '1950-2000' ELSE 'After 2000' END AS category, COUNT(*) AS count FROM opera GROUP BY category";
-    return new Promise((resolve, reject) => {
-        connection.query(query, (err, data) => {
-            if (err) return reject(err);
-            if (data.length === 0) return reject(resolve({ code: 1, msg: "菜单为空" }));
-            return resolve({ code: 0, data: data });
-        })
     });
 }
 
@@ -338,7 +339,7 @@ const search = (Keywords, Table, Field, Column) => {
     let query = `SELECT `;
     // 参数校验
     if (!Keywords || !Table || !Field || !Array.isArray(Column) || Column.length === 0) {
-        throw { code: 1, msg: "invalid parameters" };
+        throw { code: 1, msg: "不合法的参数" };
     }
     // 动态构建SQL语句
     Column.forEach((item, index) => {
@@ -357,7 +358,14 @@ const search = (Keywords, Table, Field, Column) => {
     });
 }
 
-const getAiResult = (Opera_id) => {
+const getAiResult = async (Opera_id) => {
+    if (!Opera_id) {
+        throw { code: 1, msg: "不合法的参数" };
+    }
+    const data = await getOperaInfo(Opera_id, null);
+    if (data.code !== 0) {
+        throw { code: 1, msg: "曲目不存在" };
+    }
     return new Promise((resolve, reject) => {
         connection.query("SELECT * FROM `aidata` WHERE Opera_id = ?", [Opera_id], (err, data) => {
             if (err) return reject(err);
@@ -383,7 +391,6 @@ module.exports = {
     updateOpera,
     addFavorite,
     deleteFavorite,
-    getMenu,
     search,
     getCommentsCount,
     getAiResult,

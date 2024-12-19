@@ -1,4 +1,5 @@
 var nodemailer = require('nodemailer');
+const { getVerificationCode } = require('../redisUtils/redisAccountUtil');
 
 let sendMails = (email, subject, message) => {
     let transporter = nodemailer.createTransport({
@@ -19,19 +20,12 @@ let sendMails = (email, subject, message) => {
     };
 
     return new Promise((resolve, reject) => {
+
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
-                reject({ code: 1, msg: { code: 1, msg: "发送失败" } });
+                reject({ code: 1, msg: "邮箱验证码发送失败" });
             } else {
-                resolve({
-                    code: 0,
-                    accepted: info.accepted,
-                    envelope: info.envelope,
-                    msg: {
-                        response: info.response,
-                        messageId: info.messageId,
-                    }
-                });
+                resolve({ code: 0, msg: "短信验证码发送成功，请注意查收" });
             }
         });
     });
