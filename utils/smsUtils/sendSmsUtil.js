@@ -47,10 +47,10 @@ async function sendSms(phoneNumbers, Code) {
             phoneNumbers: phoneNumbers,
             templateParam: templateParam
         });
-        return { code: 0, message: "短信验证码发送成功，请注意查收" };
+        return { code: 0, msg: "短信验证码发送成功，请注意查收" };
     } catch (error) {
         console.log(error);
-        return { code: 1, message: "短信验证码发送失败" + error.message };
+        return { code: 1, msg: "短信验证码发送失败" + error.message };
     }
 }
 

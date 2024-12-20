@@ -13,7 +13,7 @@ let sendMails = (email, subject, message) => {
     });
 
     let mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: `"黄梅戏文化平台" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: subject,
         text: message
@@ -25,7 +25,7 @@ let sendMails = (email, subject, message) => {
             if (error) {
                 reject({ code: 1, msg: "邮箱验证码发送失败" });
             } else {
-                resolve({ code: 0, msg: "短信验证码发送成功，请注意查收" });
+                resolve({ code: 0, msg: "邮箱验证码发送成功，请注意查收" });
             }
         });
     });

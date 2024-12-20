@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <title>后台管理</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style_admin.css">
+    <link rel="stylesheet" href="remixicon/remixicon.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- 顶栏 -->
+        <div class="TopBar">
+            <div class="title">黄梅戏文化平台</div>
+            <div class="flex-1"></div>
+            <div class="ToolBar">
+                <button @click="logout">退出</button>
+            </div>
+        </div>
+
+        <div class="Content Home">
+            <!-- 分类菜单 -->
+            <div class="Navigation">
+                <div class="subtitle">后台管理</div>
+            </div>
+            <!-- 内容 -->
+            <div class="Product flex-1">
+                <div class="subtitle">当前戏曲</div>
+                <div class="ProductList">
+                    <div class="head item">
+                        <div></div>
+                        <div>名称</div>
+                        <div>简介</div>
+                        <div>收藏数</div>
+                        <!-- <div>类型</div> -->
+                    </div>
+
+                    <!-- 名称和介绍多嵌套了一层DIV，用于限制文字超出显示 -->
+                    <div class="item" v-for="Item in ItemList">
+                        <div><img :src="Item.Avatar"></div>
+                        <div>
+                            <div :title="Item.Opera_title">{{Item.Opera_title}}</div>
+                        </div>
+                        <div>
+                            <div :title="Item.Description">{{Item.Description}}</div>
+                        </div>
+                        <div>{{Item.Favorite_count}}</div>
+                        <div class="del" :data-id="Item.Opera_id" @click="delProduct">删除</div>
+                    </div>
+                </div>
+
+                <div class="subtitle">添加戏曲</div>
+                <div class="NewProduct">
+                    <label for="imgFile">
+                        <img src="./img/ImageSelect.svg" v-if="NewProduct_Select_Image == null">
+                        <img :src="NewProduct_Select_Image" v-else>
+                    </label>
+                    <label for="videoFile">
+                        <video :src="NewProduct_Select_Video" v-else></video>
+                    </label>
+                    <input id="imgFile" class="hidden" type="file" accept="image/*" @change="changeImg">
+                    <input id="videoFile" class="hidden" type="file" accept="video/*" @change="changeVideo">
+                    <div>
+                        <div class="InputGroup Margin">
+                            <span><i class="ri-price-tag-3-line"></i></span>
+                            <input type="text" placeholder="请输入戏曲标题" v-model="NewProduct.Opera_title">
+                        </div>
+                        <div class="InputGroup Margin">
+                            <span><i class="ri-text"></i></span>
+                            <input type="text" placeholder="请输入戏曲简介" v-model="NewProduct.Description">
+                        </div>
+                        <div class="InputGroup Margin">
+                            <span><i class="ri-text"></i></span>
+                            <input type="text" placeholder="请输入艺术家" v-model="NewProduct.Artist">
+                        </div>
+                        <div class="InputGroup Margin">
+                            <span><i class="ri-bookmark-line"></i></span>
+                            <input type="date" v-model="NewProduct.Release_date">
+                        </div>
+                        <div class="Btn_Frame Margin">
+                            <button class="Btn_Confirm" @click="addProduct">添加戏曲</button>
+                        </div>
+                    </div>
+                    <div class="progress-container" id="progress-container" style="display: none;">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/upload.js"></script>
+    <script src="./js/admin.js"></script>
+</body>
+
+</html>
