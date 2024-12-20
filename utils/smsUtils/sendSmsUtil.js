@@ -3,7 +3,6 @@ const Dysmsapi20170525 = require('@alicloud/dysmsapi20170525');
 const OpenApi = require('@alicloud/openapi-client');
 const Util = require('@alicloud/tea-util');
 const Tea = require('@alicloud/tea-typescript');
-const { getVerificationCode } = require('../redisUtils/redisAccountUtil');
 
 class Client {
 
