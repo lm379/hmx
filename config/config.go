@@ -1,0 +1,58 @@
+package config
+
+import (
+	"log"
+	"time"
+
+	"github.com/spf13/viper"
+)
+
+type Config struct {
+	GinMode      string        `mapstructure:"GIN_MODE"`
+	ServerPort   string        `mapstructure:"SERVER_PORT"`
+	DBUser       string        `mapstructure:"DB_USER"`
+	DBPassword   string        `mapstructure:"DB_PASSWORD"`
+	DBAddress    string        `mapstructure:"DB_ADDRESS"`
+	DBPort       int           `mapstructure:"DB_PORT"`
+	DBName       string        `mapstructure:"DB_NAME"`
+	RedisAddr    string        `mapstructure:"REDIS_ADDR"`
+	RedisPass    string        `mapstructure:"REDIS_PASSWORD"`
+	RedisDB      int           `mapstructure:"REDIS_DB"`
+	JWTSecret    string        `mapstructure:"JWT_SECRET_KEY"`
+	JWTExpiresIn time.Duration `mapstructure:"JWT_EXPIRES_IN"`
+
+	S3Endpoint       string        `mapstructure:"S3_ENDPOINT"`
+	S3Region         string        `mapstructure:"S3_REGION"`
+	S3AccessKey      string        `mapstructure:"S3_ACCESS_KEY_ID"`
+	S3SecretKey      string        `mapstructure:"S3_SECRET_ACCESS_KEY"`
+	S3Bucket         string        `mapstructure:"S3_BUCKET_NAME"`
+	S3PresignExpires time.Duration `mapstructure:"S3_PRESIGN_EXPIRES_IN_MINUTES"`
+	S3CustomDomain   string        `mapstructure:"S3_CUSTOM_DOMAIN"`
+
+	SMTPHost        string `mapstructure:"SMTP_HOST"`
+	SMTPPort        int    `mapstructure:"SMTP_PORT"`
+	SMTPUser        string `mapstructure:"SMTP_USER"`
+	SMTPPass        string `mapstructure:"SMTP_PASS"`
+	SMTPCodeExpires uint   `mapstructure:"SMTP_CODE_EXPIRES"`
+}
+
+var AppConfig Config
+
+func LoadConfig() {
+	viper.AddConfigPath(".")
+	viper.SetConfigFile(".env")
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+
+	viper.SetDefault("S3_PRESIGN_EXPIRES_IN_MINUTES", 15)
+	AppConfig.S3PresignExpires = viper.GetDuration("S3_PRESIGN_EXPIRES_IN_MINUTES") * time.Minute
+
+	if err := viper.Unmarshal(&AppConfig); err != nil {
+		log.Fatalf("Unable to decode into struct, %v", err)
+	}
+
+	log.Println("Configuration loaded successfully.")
+}

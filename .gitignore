@@ -1,0 +1,70 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build output
+/bin/
+/build/
+/out/
+/dist/
+*.test
+*.exe
+hmx
+hmx.exe
+
+# Go specific
+*.prof
+*.trace
+coverage.out
+*.coverprofile
+testdata/
+pkg/
+*.a
+
+# Module / dependency management
+Godeps/
+Gopkg.lock
+Gopkg.toml
+/vendor/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# Env / local config / secrets
+.env
+*.local
+secrets.yml
+credentials.json
+
+# Logs, tmp
+*.log
+*.tmp
+tmp/
+temp/
+
+# Misc
+*.swp
+*.bak
+*.orig
+.coverage
+
+# Debug files
+*debug*
+
+# Test
+test/
