@@ -48,6 +48,13 @@ func SetupRouter() *gin.Engine {
 			operas.POST("/:id/comments", middleware.AuthMiddleware(), handlers.HandleCreateComment)
 		}
 
+		// 艺术家路由 (Artists)
+		artists := v1.Group("/artists")
+		{
+			artists.GET("/", handlers.HandleGetArtists)
+			artists.GET("/:id", handlers.HandleGetArtistByID)
+		}
+
 		// 评论路由 (Comments)
 		comments := v1.Group("/comments")
 		comments.Use(middleware.AuthMiddleware())

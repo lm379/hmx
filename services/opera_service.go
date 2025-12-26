@@ -51,8 +51,8 @@ func GetAllOperas(pagination *utils.Pagination) ([]models.Opera, int64, error) {
 		return nil, 0, err
 	}
 
-	// 应用分页查询
-	err := db.Scopes(pagination.Paginate()).Find(&operas).Error
+	// 应用分页查询并加载艺术家数据
+	err := db.Preload("Artists").Scopes(pagination.Paginate()).Find(&operas).Error
 
 	return operas, total, err
 }
@@ -62,7 +62,7 @@ func GetOperaByID(operaID uint) (models.Opera, error) {
 	var opera models.Opera
 	db := database.DB
 
-	err := db.Where("opera_id = ?", operaID).
+	err := db.Preload("Artists").Where("opera_id = ?", operaID).
 		First(&opera).Error
 
 	return opera, err

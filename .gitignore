@@ -68,3 +68,6 @@ temp/
 
 # Test
 test/
+
+frontend/node_modules/
+frontend/dist/

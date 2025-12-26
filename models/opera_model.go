@@ -7,12 +7,13 @@ import (
 
 // Artist (艺术家表)
 type Artist struct {
-	ArtistID  uint      `gorm:"column:artist_id;primaryKey"`
-	Name      string    `gorm:"column:name;type:varchar(100);unique;not null"`
-	Bio       string    `gorm:"column:bio;type:text"`
-	CreatedAt time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time `gorm:"column:updated_at;default:CURRENT_TIMESTAMP"`
-	Operas    []*Opera  `gorm:"many2many:opera_artists;"`
+	ArtistID     uint           `gorm:"column:artist_id;primaryKey"`
+	Name         string         `gorm:"column:name;type:varchar(100);unique;not null"`
+	Bio          string         `gorm:"column:bio;type:text"`
+	ArtistAvatar sql.NullString `gorm:"column:artist_avatar;type:varchar(255)"`
+	CreatedAt    time.Time      `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	UpdatedAt    time.Time      `gorm:"column:updated_at;default:CURRENT_TIMESTAMP"`
+	Operas       []*Opera       `gorm:"many2many:opera_artists;joinForeignKey:artist_id;joinReferences:opera_id"`
 }
 
 // TableName 指定表名
@@ -28,12 +29,13 @@ type Opera struct {
 	Duration    sql.NullString `gorm:"column:duration;type:time"` // 时长
 	MusicPath   sql.NullString `gorm:"column:music_path;type:varchar(255)"`
 	VideoPath   string         `gorm:"column:video_path;type:varchar(255);not null"`
+	SrtPath     sql.NullString `gorm:"column:srt_path;type:varchar(255)"`
 	Description string         `gorm:"column:description;type:text"`
 	Avatar      sql.NullString `gorm:"column:avatar;type:varchar(255)"`
 	AiSummary   string         `gorm:"column:ai_summary;type:text"`
 	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP"`
-	Artists     []*Artist      `gorm:"many2many:opera_artists;"`
+	Artists     []*Artist      `gorm:"many2many:opera_artists;joinForeignKey:opera_id;joinReferences:artist_id"`
 }
 
 // TableName 指定表名
@@ -45,15 +47,28 @@ func (Opera) TableName() string {
 type OperaResponse struct {
 	OperaID     uint      `json:"opera_id"`
 	OperaTitle  string    `json:"opera_title"`
+	Artists     []Artist  `json:"artists"`
 	ReleaseDate *string   `json:"release_date"`
 	Duration    *string   `json:"duration"`
 	MusicPath   *string   `json:"music_path"` // 完整 URL
 	VideoPath   string    `json:"video_path"` // 完整 URL
+	SrtPath     *string   `json:"srt_path"`   // 字幕 URL
 	Description string    `json:"description"`
 	Avatar      *string   `json:"avatar"` // 完整 URL
 	AiSummary   string    `json:"ai_summary"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// ArtistResponse 用于 API 返回的 DTO
+type ArtistResponse struct {
+	ArtistID  uint             `json:"artist_id"`
+	Name      string           `json:"name"`
+	Bio       string           `json:"bio"`
+	Avatar    *string          `json:"avatar"`           // 艺术家头像 URL
+	Operas    []*OperaResponse `json:"operas,omitempty"` // 包含的作品列表
+	CreatedAt time.Time        `json:"created_at"`
+	UpdatedAt time.Time        `json:"updated_at"`
 }
 
 // PresignRequest DTO (POST /uploads/presign)

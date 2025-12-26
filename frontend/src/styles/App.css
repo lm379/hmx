@@ -1,0 +1,57 @@
+/* Global reset/defaults if not in index.html */
+body {
+  margin: 0;
+  background-color: #f4f5f7;
+}
+
+.app-container {
+  min-height: 100vh;
+}
+
+.main-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+
+/* Category Bar Styles */
+.category-bar-container {
+  position: sticky;
+  top: 64px;
+  /* Height of NavBar */
+  z-index: 99;
+  background-color: #f4f5f7;
+  /* Match background to hide content scrolling behind */
+  padding-bottom: 20px;
+  padding-top: 5px;
+  /* Add some top padding */
+}
+
+.category-bar {
+  display: flex;
+  gap: 12px;
+}
+
+.cat-btn {
+  background-color: white;
+  border: 1px solid #e3e5e7;
+  color: #61666d;
+  padding: 8px 16px;
+  border-radius: 18px;
+  /* Pill shape */
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cat-btn:hover {
+  background-color: #f6f7f8;
+  color: #18191c;
+}
+
+.cat-btn.active {
+  background-color: #A40000;
+  color: white;
+  border-color: #A40000;
+  font-weight: 500;
+}
