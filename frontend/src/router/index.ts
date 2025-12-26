@@ -21,7 +21,8 @@ const routes = [
   {
     path: '/video/:id',
     name: 'Play',
-    component: () => import('../views/PlayView.vue')
+    component: () => import('../views/PlayView.vue'),
+    meta: { showCategoryBar: true }
   },
   {
     path: '/:pathMatch(.*)*',

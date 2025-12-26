@@ -62,8 +62,6 @@ export default defineComponent({
           return;
       }
 
-      console.log("Initializing DPlayer with URL:", opera.value.video_path);
-
       try {
           const options: any = {
             container: dplayerContainer.value,
@@ -71,7 +69,7 @@ export default defineComponent({
               url: opera.value.video_path,
               pic: opera.value.avatar,
             },
-            autoplay: true,
+            autoplay: false,
             theme: '#b7daff',
             lang: 'zh-cn',
             screenshot: false,
@@ -84,8 +82,9 @@ export default defineComponent({
           if (opera.value.srt_path) {
              options.subtitle = {
                  url: opera.value.srt_path,
+                 type: 'webvtt',
                  fontSize: '25px',
-                 bottom: '10%',
+                 bottom: '0%',
                  color: '#b7daff',
              };
           }
