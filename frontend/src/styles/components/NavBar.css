@@ -71,7 +71,7 @@
 }
 
 .search-btn:hover {
-  color: #00aeec;
+  color: #af000e;
 }
 
 /* Right: User Actions */
@@ -85,7 +85,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  overflow: hidden;
+  position: relative;
   cursor: pointer;
   border: 1px solid #e3e5e7;
   transition: transform 0.2s;
@@ -95,10 +95,108 @@
   transform: scale(1.1);
 }
 
+.avatar-wrapper:hover .user-dropdown {
+  display: block;
+}
+
 .avatar {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
+}
+
+.user-dropdown {
+  display: none;
+  position: absolute;
+  top: 45px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  min-width: 180px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px 0;
+  z-index: 1000;
+}
+
+/* Bridge the gap between avatar and dropdown to keep hover state */
+.user-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: transparent;
+}
+
+.user-info-brief {
+  padding: 8px 16px;
+  text-align: center;
+}
+
+.username {
+  font-weight: 600;
+  color: #18191c;
+  margin: 0;
+  font-size: 14px;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #9499a0;
+  margin: 4px 0 0;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #f1f2f3;
+  margin: 8px 0;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #61666d;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #f1f2f3;
+  color: #18191c;
+}
+
+.login-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.avatar-placeholder {
+  width: 38px;
+  height: 38px;
+  background-color: #f1f2f3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-text {
+  font-size: 13px;
+  color: #61666d;
+}
+
+.login-trigger:hover .avatar-placeholder {
+  background-color: #e3e5e7;
+}
+
+.login-trigger:hover .login-text {
+  color: #af000e;
 }
 
 .action-item {
@@ -112,7 +210,7 @@
 }
 
 .action-item:hover {
-  color: #00aeec;
+  color: #af000e;
 }
 
 .upload-btn {

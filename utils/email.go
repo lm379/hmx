@@ -24,6 +24,7 @@ func SendEmail(to string, subject string, body string) error {
 
 	// 配置 TLS
 	d.TLSConfig = &tls.Config{
+		ServerName:         cfg.SMTPHost,
 		InsecureSkipVerify: false,
 	}
 

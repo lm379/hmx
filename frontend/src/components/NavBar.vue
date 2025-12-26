@@ -16,18 +16,35 @@
 
       <!-- Right: User Actions -->
       <div class="user-actions">
-        <div class="avatar-wrapper">
-           <img src="https://ui-avatars.com/api/?name=User&background=random" alt="Avatar" class="avatar" />
-        </div>
-        <!-- <div class="action-item">
-           <span>动态</span>
-        </div> -->
-        <div class="action-item">
-           <span>收藏</span>
-        </div>
-        <div class="action-item">
-           <span>历史</span>
-        </div>
+        <template v-if="isLoggedIn && user">
+          <div class="avatar-wrapper" @click="goProfile">
+             <img :src="user.icon || `https://ui-avatars.com/api/?name=${user.username}&background=random`" alt="Avatar" class="avatar" />
+             <div class="user-dropdown">
+               <div class="user-info-brief" @click.stop="goProfile">
+                 <p class="username">{{ user.username }}</p>
+                 <p class="user-role">{{ user.role }}</p>
+               </div>
+               <div class="dropdown-divider"></div>
+               <div class="dropdown-item" @click.stop="goProfile">个人中心</div>
+               <div class="dropdown-item" @click.stop="handleLogout">退出登录</div>
+             </div>
+          </div>
+          <div class="action-item" @click="goProfile">
+             <span>收藏</span>
+          </div>
+          <div class="action-item" @click="goProfile">
+             <span>历史</span>
+          </div>
+        </template>
+        <template v-else>
+          <div class="login-trigger" @click="goLogin">
+            <div class="avatar-placeholder">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#61666d"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
+            </div>
+            <span class="login-text">登录</span>
+          </div>
+        </template>
+        
         <button class="upload-btn">
           <span>投稿</span>
         </button>

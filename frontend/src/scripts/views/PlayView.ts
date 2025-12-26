@@ -30,6 +30,8 @@ export default defineComponent({
         const response = await axios.get(`/api/v1/operas/${id}`);
         if (response.data && response.data.data) {
           opera.value = response.data.data;
+          // Record watch history
+          axios.post(`/api/v1/operas/${id}/history`).catch(err => console.error("Failed to record history:", err));
         }
 
         // Fetch random recommendations
@@ -70,13 +72,13 @@ export default defineComponent({
               pic: opera.value.avatar,
             },
             autoplay: false,
-            theme: '#b7daff',
+            theme: '#af000e',
             lang: 'zh-cn',
             screenshot: false,
             hotkey: true,
             preload: 'auto',
-            volume: 0.7,
-            mutex: true,
+            volume: 0.5,
+            mutex: false,
           };
 
           if (opera.value.srt_path) {
@@ -84,7 +86,7 @@ export default defineComponent({
                  url: opera.value.srt_path,
                  type: 'webvtt',
                  fontSize: '25px',
-                 bottom: '0%',
+                 bottom: '5%',
                  color: '#b7daff',
              };
           }

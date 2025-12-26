@@ -28,6 +28,7 @@ func SetupRouter() *gin.Engine {
 			users.GET("/me", handlers.HandleGetMe)
 			users.GET("/me/likes", handlers.HandleGetUserLikes)
 			users.GET("/me/favorites", handlers.HandleGetUserFavorites)
+			users.GET("/me/history", handlers.HandleGetUserHistory)
 		}
 
 		// 上传路由 (Uploads)
@@ -42,6 +43,7 @@ func SetupRouter() *gin.Engine {
 		{
 			operas.GET("/", handlers.HandleGetOperas)
 			operas.GET("/:id", handlers.HandleGetOperaByID)
+			operas.POST("/:id/history", middleware.TryAuthMiddleware(), handlers.HandleRecordHistory) // 允许游客记录，但优先获取用户信息
 			operas.POST("/", middleware.AuthMiddleware(), handlers.HandleCreateOpera)
 			operas.POST("/:id/like", middleware.AuthMiddleware(), handlers.HandleToggleLike)
 			operas.POST("/:id/favorite", middleware.AuthMiddleware(), handlers.HandleToggleFavorite)

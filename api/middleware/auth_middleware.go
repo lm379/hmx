@@ -41,6 +41,29 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+// TryAuthMiddleware 尝试验证 JWT Token，如果失败也继续执行（用于支持游客+用户的接口）
+func TryAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Next()
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString := parts[1]
+			claims, err := utils.ValidateToken(tokenString)
+			if err == nil {
+				c.Set("userID", claims.UserID)
+				c.Set("username", claims.Username)
+				c.Set("role", claims.Role)
+			}
+		}
+		c.Next()
+	}
+}
+
 // AdminMiddleware 检查用户是否具有管理员权限
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

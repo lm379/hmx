@@ -25,17 +25,19 @@ const (
 
 // Users (用户表)
 type Users struct {
-	UserID    uint           `gorm:"column:user_id;primaryKey"`
-	Username  string         `gorm:"column:username;type:varchar(50);unique;not null"`
-	Phone     string         `gorm:"column:phone;type:varchar(15);unique;not null"`
-	Email     sql.NullString `gorm:"column:email;type:varchar(255);unique"`
-	Password  string         `gorm:"column:password;type:varchar(255);not null"`
-	Sex       UserSex        `gorm:"column:sex;type:user_sex;default:Other;not null"`
-	Icon      sql.NullString `gorm:"column:icon;type:varchar(255)"`
-	Role      UserRole       `gorm:"column:role;type:user_role;default:User;not null"`
-	CreatedAt time.Time      `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time      `gorm:"column:updated_at;default:CURRENT_TIMESTAMP"`
-	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	UserID      uint           `gorm:"column:user_id;primaryKey"`
+	Username    string         `gorm:"column:username;type:varchar(50);unique;not null"`
+	Phone       string         `gorm:"column:phone;type:varchar(15);unique;not null"`
+	Email       sql.NullString `gorm:"column:email;type:varchar(255);unique"`
+	Password    string         `gorm:"column:password;type:varchar(255);not null"`
+	Sex         UserSex        `gorm:"column:sex;type:user_sex;default:Other;not null"`
+	Icon        sql.NullString `gorm:"column:icon;type:varchar(255)"`
+	Role        UserRole       `gorm:"column:role;type:user_role;default:User;not null"`
+	LastLoginAt *time.Time     `gorm:"column:last_login_at"`
+	LastIp      string         `gorm:"column:last_ip;type:varchar(50)"`
+	CreatedAt   time.Time      `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	UpdatedAt   time.Time      `gorm:"column:updated_at;default:CURRENT_TIMESTAMP"`
+	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 // TableName 指定表名
@@ -45,15 +47,16 @@ func (Users) TableName() string {
 
 // UserResponse 用于 API 返回的 DTO，自动处理 URL 拼接
 type UserResponse struct {
-	UserID    uint      `json:"user_id"`
-	Username  string    `json:"username"`
-	Phone     string    `json:"phone"`
-	Email     *string   `json:"email"`
-	Sex       UserSex   `json:"sex"`
-	Icon      *string   `json:"icon"` // 完整 URL
-	Role      UserRole  `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UserID      uint       `json:"user_id"`
+	Username    string     `json:"username"`
+	Phone       string     `json:"phone"`
+	Email       *string    `json:"email"`
+	Sex         UserSex    `json:"sex"`
+	Icon        *string    `json:"icon"` // 完整 URL
+	Role        UserRole   `json:"role"`
+	LastLoginAt *time.Time `json:"last_login_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 // RegisterInput 注册时绑定的 JSON
@@ -67,7 +70,7 @@ type RegisterInput struct {
 
 // LoginInput 登录时绑定的 JSON
 type LoginInput struct {
-	Email    string `json:"email" binding:"required,email"`
+	Account  string `json:"account" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 

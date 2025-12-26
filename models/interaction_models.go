@@ -51,6 +51,7 @@ type PlayHistory struct {
 	PlayID    uint      `gorm:"column:play_id;primaryKey"`
 	UserID    *uint     `gorm:"column:user_id"` // 可为空，支持游客
 	OperaID   uint      `gorm:"column:opera_id"`
+	Count     int       `gorm:"column:count;default:1"` // 播放次数
 	CreatedAt time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 }
 

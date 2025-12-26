@@ -201,8 +201,8 @@ func RegisterUser(input models.RegisterInput) (gin.H, int) {
 func LoginUser(input models.LoginInput) (gin.H, int) {
 	var user models.Users
 
-	// 查找用户
-	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+	// 查找用户 (支持 Email 或 Username)
+	if err := database.DB.Where("email = ? OR username = ?", input.Account, input.Account).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return gin.H{"error": "Invalid credentials"}, http.StatusUnauthorized
 		}
@@ -213,6 +213,10 @@ func LoginUser(input models.LoginInput) (gin.H, int) {
 	if !utils.CheckPasswordHash(input.Password, user.Password) {
 		return gin.H{"error": "Invalid credentials"}, http.StatusUnauthorized
 	}
+
+	// 更新最后登录时间
+	now := time.Now()
+	database.DB.Model(&user).Update("last_login_at", now)
 
 	// 生成 JWT
 	token, err := utils.GenerateToken(user.UserID, user.Username, string(user.Role))

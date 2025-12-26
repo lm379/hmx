@@ -41,3 +41,16 @@ export interface ArtistListResponse {
         page_size: number;
     }
 }
+
+export interface User {
+    user_id: number;
+    username: string;
+    phone: string;
+    email?: string;
+    sex: string;
+    icon?: string;
+    role: string;
+    last_login_at?: string;
+    created_at: string;
+    updated_at: string;
+}

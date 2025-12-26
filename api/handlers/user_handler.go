@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/lm379/hmx/database"
 	"github.com/lm379/hmx/models"
@@ -73,4 +75,50 @@ func HandleGetUserFavorites(c *gin.Context) {
 			"page_size": pagination.PageSize,
 		},
 	})
+}
+
+// HandleGetUserHistory (GET /api/v1/users/me/history)
+func HandleGetUserHistory(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	pagination := utils.GetPagination(c)
+
+	operas, total, err := services.GetUserHistory(userID, pagination)
+	if err != nil {
+		utils.InternalServerError(c, "Failed to fetch watch history")
+		return
+	}
+
+	operaResponses := utils.ToOperaResponseList(operas)
+
+	utils.Success(c, gin.H{
+		"list": operaResponses,
+		"pagination": gin.H{
+			"total":     total,
+			"page":      pagination.Page,
+			"page_size": pagination.PageSize,
+		},
+	})
+}
+
+// HandleRecordHistory (POST /api/v1/operas/:id/history)
+func HandleRecordHistory(c *gin.Context) {
+	idParam := c.Param("id")
+	operaID, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		utils.BadRequest(c, "Invalid opera ID")
+		return
+	}
+
+	var userIDPtr *uint
+	if userID, exists := c.Get("userID"); exists {
+		id := userID.(uint)
+		userIDPtr = &id
+	}
+
+	if err := services.RecordPlayHistory(userIDPtr, uint(operaID)); err != nil {
+		utils.InternalServerError(c, "Failed to record history")
+		return
+	}
+
+	utils.Success(c, gin.H{"message": "History recorded"})
 }
