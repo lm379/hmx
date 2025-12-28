@@ -21,7 +21,6 @@ hmx.exe
 coverage.out
 *.coverprofile
 testdata/
-pkg/
 *.a
 
 # Module / dependency management
@@ -70,4 +69,4 @@ temp/
 test/
 
 frontend/node_modules/
-frontend/dist/
+static/

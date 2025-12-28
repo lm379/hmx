@@ -12,5 +12,9 @@ export default defineConfig({
         // rewrite: (path) => path.replace(/^\/api/, '') // backend route starts with /api/v1 so we don't need to rewrite if frontend calls /api/v1
       }
     }
+  },
+  build: {
+    outDir: '../cmd/server/static', 
+    emptyOutDir: true
   }
 })
