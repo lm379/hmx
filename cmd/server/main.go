@@ -25,7 +25,13 @@ func main() {
 
 	gin.SetMode(cfg.GinMode)
 
-	r := api.SetupRouter(staticFiles)
+	// debug 模式下不嵌入静态文件
+	var r *gin.Engine
+	if cfg.GinMode == gin.DebugMode {
+		r = api.SetupRouter(nil)
+	} else {
+		r = api.SetupRouter(&staticFiles)
+	}
 
 	r.Run(":" + cfg.ServerPort)
 }
