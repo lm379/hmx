@@ -8,50 +8,6 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script lang="ts" src="../scripts/views/NotFound.ts"></script>
 
-export default defineComponent({
-  name: 'NotFound'
-});
-</script>
-
-<style scoped>
-.not-found-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-  text-align: center;
-  color: #18191c;
-}
-
-.error-code {
-  font-size: 80px;
-  font-weight: bold;
-  color: #A40000;
-  margin: 0;
-  line-height: 1;
-}
-
-.error-message {
-  font-size: 18px;
-  color: #61666d;
-  margin: 20px 0 30px;
-}
-
-.home-btn {
-  background-color: #A40000;
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.home-btn:hover {
-  background-color: #c90000;
-}
-</style>
+<style scoped src="../styles/views/NotFound.css"></style>

@@ -47,30 +47,4 @@
 
 <script lang="ts" src="../scripts/views/RegisterView.ts"></script>
 <style scoped src="../styles/views/LoginView.css"></style>
-<style scoped>
-.input-with-btn {
-  display: flex;
-  gap: 8px;
-}
-.input-with-btn input {
-  flex: 1;
-}
-.send-code-btn {
-  white-space: nowrap;
-  padding: 0 12px;
-  background-color: #f1f2f3;
-  border: 1px solid #e3e5e7;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #61666d;
-  cursor: pointer;
-}
-.send-code-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.success-message {
-  color: #43ca43;
-  font-size: 13px;
-}
-</style>
+<style scoped src="../styles/views/RegisterView.css"></style>
