@@ -55,6 +55,7 @@ type UserResponse struct {
 	Icon        *string    `json:"icon"` // 完整 URL
 	Role        UserRole   `json:"role"`
 	LastLoginAt *time.Time `json:"last_login_at"`
+	LastLoginIP string     `json:"last_login_ip"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 }

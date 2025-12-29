@@ -9,7 +9,7 @@ import (
 	"github.com/lm379/hmx/internal/api/v1/middleware"
 )
 
-func SetupRouter(staticFiles embed.FS) *gin.Engine {
+func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 	r := gin.Default()
 	// ... (CORS)
 
@@ -77,31 +77,34 @@ func SetupRouter(staticFiles embed.FS) *gin.Engine {
 	}
 
 	// 静态文件服务 (Embedded Frontend)
-	staticFS, err := fs.Sub(staticFiles, "static")
-	if err == nil {
-		// 提供 assets 目录下的静态资源
-		assetsFS, err := fs.Sub(staticFS, "assets")
+	// debug 模式下 staticFiles 为 nil，不提供静态文件服务
+	if staticFiles != nil {
+		staticFS, err := fs.Sub(staticFiles, "static")
 		if err == nil {
-			r.StaticFS("/assets", http.FS(assetsFS))
-		}
+			// 提供 assets 目录下的静态资源
+			assetsFS, err := fs.Sub(staticFS, "assets")
+			if err == nil {
+				r.StaticFS("/assets", http.FS(assetsFS))
+			}
 
-		// 首页路由
-		r.GET("/", func(c *gin.Context) {
-			data, err := staticFiles.ReadFile("static/index.html")
-			if err != nil {
-				c.String(http.StatusNotFound, "404 page not found")
-				return
-			}
-			c.Data(http.StatusOK, "text/html; charset=utf-8", data)
-		})
-		r.NoRoute(func(c *gin.Context) {
-			data, err := staticFiles.ReadFile("static/index.html")
-			if err != nil {
-				c.String(http.StatusNotFound, "404 page not found")
-				return
-			}
-			c.Data(http.StatusOK, "text/html; charset=utf-8", data)
-		})
+			// 首页路由
+			r.GET("/", func(c *gin.Context) {
+				data, err := staticFiles.ReadFile("static/index.html")
+				if err != nil {
+					c.String(http.StatusNotFound, "404 page not found")
+					return
+				}
+				c.Data(http.StatusOK, "text/html; charset=utf-8", data)
+			})
+			r.NoRoute(func(c *gin.Context) {
+				data, err := staticFiles.ReadFile("static/index.html")
+				if err != nil {
+					c.String(http.StatusNotFound, "404 page not found")
+					return
+				}
+				c.Data(http.StatusOK, "text/html; charset=utf-8", data)
+			})
+		}
 	}
 
 	return r

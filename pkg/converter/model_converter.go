@@ -114,13 +114,15 @@ func ToUserResponse(user *models.Users) *models.UserResponse {
 	}
 
 	response := &models.UserResponse{
-		UserID:    user.UserID,
-		Username:  user.Username,
-		Phone:     user.Phone,
-		Sex:       user.Sex,
-		Role:      user.Role,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		UserID:      user.UserID,
+		Username:    user.Username,
+		Phone:       user.Phone,
+		Sex:         user.Sex,
+		Role:        user.Role,
+		LastLoginAt: user.LastLoginAt,
+		LastLoginIP: user.LastIp,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
 	}
 
 	// 处理可空字段

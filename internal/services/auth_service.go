@@ -200,7 +200,7 @@ func RegisterUser(input models.RegisterInput) (gin.H, int) {
 }
 
 // LoginUser 登录用户并返回 JWT
-func LoginUser(input models.LoginInput) (gin.H, int) {
+func LoginUser(input models.LoginInput, clientIP string) (gin.H, int) {
 	var user models.Users
 
 	// 查找用户 (支持 Email 或 Username)
@@ -216,9 +216,12 @@ func LoginUser(input models.LoginInput) (gin.H, int) {
 		return gin.H{"error": "Invalid credentials"}, http.StatusUnauthorized
 	}
 
-	// 更新最后登录时间
+	// 更新最后登录时间和 IP
 	now := time.Now()
-	database.DB.Model(&user).Update("last_login_at", now)
+	database.DB.Model(&user).Updates(map[string]interface{}{
+		"last_login_at": now,
+		"last_ip":       clientIP,
+	})
 
 	// 生成 JWT
 	token, err := jwtutils.GenerateToken(user.UserID, user.Username, string(user.Role))

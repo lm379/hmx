@@ -49,7 +49,10 @@ func HandleLogin(c *gin.Context) {
 		return
 	}
 
-	response, status := services.LoginUser(input)
+	// 获取客户端 IP
+	clientIP := c.ClientIP()
+
+	response, status := services.LoginUser(input, clientIP)
 	if status != http.StatusOK {
 		resp.Error(c, status, response["error"].(string))
 		return
