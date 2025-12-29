@@ -25,6 +25,22 @@ type EmailTemplateData struct {
 	ExpiryTime       int
 }
 
+// VerifyCode 验证验证码
+func VerifyCode(email, code string) bool {
+	redisKey := "verify_code:" + email
+	storedCode, err := database.RDBVerifyCode.Get(database.Ctx, redisKey).Result()
+	if err != nil {
+		return false
+	}
+	return storedCode == code
+}
+
+// DeleteCode 删除验证码
+func DeleteCode(email string) {
+	redisKey := "verify_code:" + email
+	database.RDBVerifyCode.Del(database.Ctx, redisKey)
+}
+
 // SendVerificationCode 生成并发送验证码
 func SendVerificationCode(email string) (gin.H, int) {
 	// 生成 6 位随机数

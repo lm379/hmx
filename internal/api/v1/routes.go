@@ -31,6 +31,9 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 		users.Use(middleware.AuthMiddleware())
 		{
 			users.GET("/me", HandleGetMe)
+			users.PUT("/me", HandleUpdateUserProfile)
+			users.POST("/me/password", HandleUpdatePassword)
+			users.POST("/me/email-code", HandleSendCodeToCurrentUser)
 			users.GET("/me/likes", HandleGetUserLikes)
 			users.GET("/me/favorites", HandleGetUserFavorites)
 			users.GET("/me/history", HandleGetUserHistory)
@@ -46,12 +49,13 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 		// 作品路由 (Operas)
 		operas := v1.Group("/operas")
 		{
-			operas.GET("/", HandleGetOperas)
-			operas.GET("/:id", HandleGetOperaByID)
+			operas.GET("/", middleware.TryAuthMiddleware(), HandleGetOperas)
+			operas.GET("/:id", middleware.TryAuthMiddleware(), HandleGetOperaByID)
 			operas.POST("/:id/history", middleware.TryAuthMiddleware(), HandleRecordHistory) // 允许游客记录，但优先获取用户信息
 			operas.POST("/", middleware.AuthMiddleware(), HandleCreateOpera)
 			operas.POST("/:id/like", middleware.AuthMiddleware(), HandleToggleLike)
 			operas.POST("/:id/favorite", middleware.AuthMiddleware(), HandleToggleFavorite)
+			operas.POST("/:id/share", middleware.TryAuthMiddleware(), HandleShare)
 			operas.POST("/:id/comments", middleware.AuthMiddleware(), HandleCreateComment)
 		}
 

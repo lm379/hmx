@@ -3,9 +3,19 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import DPlayer from 'dplayer';
 import type { Opera } from '../../types';
+import PlayCountIcon from '../../assets/play_count.svg?component';
+import LikeIcon from '../../assets/like.svg?component';
+import FavIcon from '../../assets/fav.svg?component';
+import ShareIcon from '../../assets/share.svg?component';
 
 export default defineComponent({
   name: 'PlayView',
+  components: {
+    PlayCountIcon,
+    LikeIcon,
+    FavIcon,
+    ShareIcon
+  },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -146,6 +156,57 @@ export default defineComponent({
       return names.length === 3 ? names.join(', ') + '等' : names.join(', ');
     };
 
+    const onToggleLike = async () => {
+      if (!opera.value) return;
+      const id = route.params.id;
+      try {
+        const res = await axios.post(`/api/v1/operas/${id}/like`);
+        const data = res.data?.data || {};
+        if (opera.value) {
+          opera.value.like_count = data.like_count ?? opera.value.like_count ?? 0;
+          opera.value.favorite_count = data.favorite_count ?? opera.value.favorite_count ?? 0;
+          opera.value.share_count = data.share_count ?? opera.value.share_count ?? 0;
+          opera.value.liked = data.liked ?? opera.value.liked ?? false;
+          opera.value.favorited = data.favorited ?? opera.value.favorited ?? false;
+        }
+      } catch (e) {
+        console.error('Failed to toggle like', e);
+      }
+    };
+
+    const onToggleFavorite = async () => {
+      if (!opera.value) return;
+      const id = route.params.id;
+      try {
+        const res = await axios.post(`/api/v1/operas/${id}/favorite`);
+        const data = res.data?.data || {};
+        if (opera.value) {
+          opera.value.like_count = data.like_count ?? opera.value.like_count ?? 0;
+          opera.value.favorite_count = data.favorite_count ?? opera.value.favorite_count ?? 0;
+          opera.value.share_count = data.share_count ?? opera.value.share_count ?? 0;
+          opera.value.liked = data.liked ?? opera.value.liked ?? false;
+          opera.value.favorited = data.favorited ?? opera.value.favorited ?? false;
+        }
+      } catch (e) {
+        console.error('Failed to toggle favorite', e);
+      }
+    };
+
+    const onShare = async () => {
+      if (!opera.value) return;
+      const id = route.params.id;
+      try {
+        const res = await axios.post(`/api/v1/operas/${id}/share`);
+        const data = res.data?.data || {};
+        if (opera.value) {
+          opera.value.share_count = data.share_count ?? opera.value.share_count ?? 0;
+          // 分享不改变 like/favorite 状态
+        }
+      } catch (e) {
+        console.error('Failed to record share', e);
+      }
+    };
+
     return {
       opera,
       loading,
@@ -154,7 +215,10 @@ export default defineComponent({
       dplayerContainer,
       recommendations,
       formatTime,
-      formatArtists
+      formatArtists,
+      onToggleLike,
+      onToggleFavorite,
+      onShare
     };
   }
 });

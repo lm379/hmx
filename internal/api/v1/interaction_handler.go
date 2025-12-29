@@ -28,12 +28,16 @@ func HandleToggleLike(c *gin.Context) {
 		return
 	}
 
-	response, status := services.ToggleLike(userID, operaID)
-	if status >= 400 {
-		resp.Error(c, status, response["error"].(string))
+	result, err := services.ToggleLike(userID, operaID)
+	if err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
 		return
 	}
-	resp.Success(c, response)
+	resp.Success(c, result)
 }
 
 // HandleToggleFavorite (POST /api/v1/operas/:id/favorite)
@@ -45,12 +49,47 @@ func HandleToggleFavorite(c *gin.Context) {
 		return
 	}
 
-	response, status := services.ToggleFavorite(userID, operaID)
-	if status >= 400 {
-		resp.Error(c, status, response["error"].(string))
+	result, err := services.ToggleFavorite(userID, operaID)
+	if err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
 		return
 	}
-	resp.Success(c, response)
+	resp.Success(c, result)
+}
+
+// HandleShare (POST /api/v1/operas/:id/share)
+func HandleShare(c *gin.Context) {
+	var uidPtr *uint
+	if v, exists := c.Get("userID"); exists {
+		u := v.(uint)
+		uidPtr = &u
+	}
+
+	operaID, err := getOperaIDParam(c)
+	if err != nil {
+		resp.BadRequest(c, "Invalid opera ID")
+		return
+	}
+
+	result, err := services.RecordShare(uidPtr, operaID)
+	if err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
+		return
+	}
+	// 如果是新分享，返回201；否则返回200
+	if result.NewShare {
+		resp.Created(c, result)
+	} else {
+		resp.Success(c, result)
+	}
 }
 
 // HandleCreateComment (POST /api/v1/operas/:id/comments)
@@ -68,12 +107,16 @@ func HandleCreateComment(c *gin.Context) {
 		return
 	}
 
-	response, status := services.CreateComment(userID, operaID, input)
-	if status >= 400 {
-		resp.Error(c, status, response["error"].(string))
+	result, err := services.CreateComment(userID, operaID, input)
+	if err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
 		return
 	}
-	resp.Created(c, response)
+	resp.Created(c, result)
 }
 
 // HandleDeleteComment (DELETE /api/v1/comments/:id)
@@ -88,10 +131,14 @@ func HandleDeleteComment(c *gin.Context) {
 		return
 	}
 
-	response, status := services.DeleteComment(userID, uint(commentID), userRole)
-	if status >= 400 {
-		resp.Error(c, status, response["error"].(string))
+	result, err := services.DeleteComment(userID, uint(commentID), userRole)
+	if err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
 		return
 	}
-	resp.Success(c, response)
+	resp.Success(c, result)
 }

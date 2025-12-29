@@ -124,3 +124,70 @@ func HandleRecordHistory(c *gin.Context) {
 
 	resp.Success(c, gin.H{"message": "History recorded"})
 }
+
+// HandleUpdateUserProfile (PUT /api/v1/users/me)
+func HandleUpdateUserProfile(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	var input models.UpdateUserProfileRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		resp.BadRequest(c, err.Error())
+		return
+	}
+
+	if err := services.UpdateUserProfile(userID, input); err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
+		return
+	}
+
+	resp.Success(c, gin.H{"message": "Profile updated successfully"})
+}
+
+// HandleUpdatePassword (POST /api/v1/users/me/password)
+func HandleUpdatePassword(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	var input models.UpdatePasswordRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		resp.BadRequest(c, err.Error())
+		return
+	}
+
+	if err := services.UpdatePassword(userID, input); err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
+		return
+	}
+
+	resp.Success(c, gin.H{"message": "Password updated successfully"})
+}
+
+// HandleSendCodeToCurrentUser (POST /api/v1/users/me/email-code)
+func HandleSendCodeToCurrentUser(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	// Fetch current user email
+	var user models.Users
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		resp.InternalServerError(c, "Failed to fetch user info")
+		return
+	}
+
+	if !user.Email.Valid || user.Email.String == "" {
+		resp.BadRequest(c, "User has no email bound")
+		return
+	}
+
+	response, status := services.SendVerificationCode(user.Email.String)
+	if status != 200 {
+		resp.Error(c, status, response["error"].(string))
+		return
+	}
+
+	resp.Success(c, response)
+}

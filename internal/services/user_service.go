@@ -1,10 +1,13 @@
 package services
 
 import (
+	"errors"
+	"net/http"
 	"time"
 
 	"github.com/lm379/hmx/database"
 	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/pkg/hashutils"
 	"github.com/lm379/hmx/pkg/pagination"
 	"gorm.io/gorm"
 )
@@ -136,4 +139,86 @@ func RecordPlayHistory(userID *uint, operaID uint) error {
 	}
 
 	return db.Create(&history).Error
+}
+
+// UpdateUserProfile 更新用户资料
+func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error {
+	db := database.DB
+	var user models.Users
+	if err := db.First(&user, userID).Error; err != nil {
+		return errors.New("user not found")
+	}
+
+	updates := make(map[string]interface{})
+
+	// Username
+	if input.Username != "" && input.Username != user.Username {
+		var count int64
+		db.Model(&models.Users{}).Where("username = ?", input.Username).Count(&count)
+		if count > 0 {
+			return &ServiceError{Code: http.StatusConflict, Message: "Username already taken"}
+		}
+		updates["username"] = input.Username
+	}
+
+	// Phone
+	if input.Phone != "" && input.Phone != user.Phone {
+		var count int64
+		db.Model(&models.Users{}).Where("phone = ?", input.Phone).Count(&count)
+		if count > 0 {
+			return &ServiceError{Code: http.StatusConflict, Message: "Phone number already in use"}
+		}
+		updates["phone"] = input.Phone
+	}
+
+	// Sex
+	if input.Sex != "" {
+		updates["sex"] = input.Sex
+	}
+
+	// Email (Need Verification)
+	if input.Email != "" && input.Email != user.Email.String {
+		// Check uniqueness
+		var count int64
+		db.Model(&models.Users{}).Where("email = ?", input.Email).Count(&count)
+		if count > 0 {
+			return &ServiceError{Code: http.StatusConflict, Message: "Email already in use"}
+		}
+
+		// Verify Code against CURRENT email (user must prove ownership of account to change email)
+		if !VerifyCode(user.Email.String, input.Code) {
+			return &ServiceError{Code: http.StatusBadRequest, Message: "Invalid verification code"}
+		}
+		// Invalidate code
+		DeleteCode(user.Email.String)
+
+		updates["email"] = input.Email
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	return db.Model(&user).Updates(updates).Error
+}
+
+// UpdatePassword 更新密码
+func UpdatePassword(userID uint, input models.UpdatePasswordRequest) error {
+	db := database.DB
+	var user models.Users
+	if err := db.First(&user, userID).Error; err != nil {
+		return errors.New("user not found")
+	}
+
+	// Verify Old Password
+	if !hashutils.CheckPasswordHash(input.OldPassword, user.Password) {
+		return &ServiceError{Code: http.StatusUnauthorized, Message: "Incorrect old password"}
+	}
+
+	hashedPassword, err := hashutils.HashPassword(input.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	return db.Model(&user).Update("password", hashedPassword).Error
 }

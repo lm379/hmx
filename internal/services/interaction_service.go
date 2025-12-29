@@ -4,131 +4,248 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/lm379/hmx/database"
 	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/internal/repository"
 	"gorm.io/gorm"
 )
 
-// checkOperaExists 检查作品是否存在
-func checkOperaExists(db *gorm.DB, operaID uint) error {
-	var opera models.Opera
-	if err := db.First(&opera, operaID).Error; err != nil {
-		return err
-	}
-	return nil
+var interactionRepo = repository.NewInteractionRepo()
+
+// InteractionResponse 交互操作的响应结构
+type InteractionResponse struct {
+	Status        string `json:"status,omitempty"`
+	Liked         bool   `json:"liked"`
+	Favorited     bool   `json:"favorited"`
+	LikeCount     int64  `json:"like_count"`
+	FavoriteCount int64  `json:"favorite_count"`
+	ShareCount    int64  `json:"share_count"`
+	PlayCount     int64  `json:"play_count"`
 }
 
 // ToggleLike 切换点赞状态
-func ToggleLike(userID, operaID uint) (gin.H, int) {
-	db := database.DB
-
+func ToggleLike(userID, operaID uint) (*InteractionResponse, error) {
 	// 检查作品是否存在
-	if err := checkOperaExists(db, operaID); err != nil {
-		return gin.H{"error": "Opera not found"}, http.StatusNotFound
+	if err := interactionRepo.CheckOperaExists(operaID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, &ServiceError{Code: http.StatusNotFound, Message: "Opera not found"}
+		}
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to check opera"}
 	}
 
-	like := models.Like{UserID: userID, OperaID: operaID}
-
+	var status string
+	var liked bool
 	// 尝试查找点赞
-	err := db.Where("user_id = ? AND opera_id = ?", userID, operaID).First(&like).Error
+	_, err := interactionRepo.GetLike(userID, operaID)
 	if err == nil {
 		// 找到了 -> 取消点赞
-		if err := db.Delete(&like).Error; err != nil {
-			return gin.H{"error": "Failed to unlike"}, http.StatusInternalServerError
+		if err := interactionRepo.DeleteLike(userID, operaID); err != nil {
+			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to unlike"}
 		}
-		return gin.H{"status": "unliked"}, http.StatusOK
+		status = "unliked"
+		liked = false
 	} else if err == gorm.ErrRecordNotFound {
 		// 没找到 -> 创建点赞
-		if err := db.Create(&like).Error; err != nil {
-			return gin.H{"error": "Failed to like"}, http.StatusInternalServerError
+		if err := interactionRepo.CreateLike(userID, operaID); err != nil {
+			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to like"}
 		}
-		return gin.H{"status": "liked"}, http.StatusCreated
+		status = "liked"
+		liked = true
+	} else {
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Database error"}
 	}
 
-	return gin.H{"error": "Database error"}, http.StatusInternalServerError
+	lc, fc, sc, pc := GetCounts(operaID)
+	return &InteractionResponse{
+		Status:        status,
+		Liked:         liked,
+		Favorited:     interactionRepo.IsFavorited(userID, operaID),
+		LikeCount:     lc,
+		FavoriteCount: fc,
+		ShareCount:    sc,
+		PlayCount:     pc,
+	}, nil
 }
 
 // ToggleFavorite 切换收藏状态
-func ToggleFavorite(userID, operaID uint) (gin.H, int) {
-	db := database.DB
-
+func ToggleFavorite(userID, operaID uint) (*InteractionResponse, error) {
 	// 检查作品
-	if err := checkOperaExists(db, operaID); err != nil {
-		return gin.H{"error": "Opera not found"}, http.StatusNotFound
+	if err := interactionRepo.CheckOperaExists(operaID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, &ServiceError{Code: http.StatusNotFound, Message: "Opera not found"}
+		}
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to check opera"}
 	}
 
-	fav := models.Favorite{UserID: userID, OperaID: operaID}
-
+	var status string
+	var favorited bool
 	// 切换逻辑
-	err := db.Where("user_id = ? AND opera_id = ?", userID, operaID).First(&fav).Error
+	_, err := interactionRepo.GetFavorite(userID, operaID)
 	if err == nil {
-		if err := db.Delete(&fav).Error; err != nil {
-			return gin.H{"error": "Failed to unfavorite"}, http.StatusInternalServerError
+		if err := interactionRepo.DeleteFavorite(userID, operaID); err != nil {
+			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to unfavorite"}
 		}
-		return gin.H{"status": "unfavorited"}, http.StatusOK
+		status = "unfavorited"
+		favorited = false
 	} else if err == gorm.ErrRecordNotFound {
-		if err := db.Create(&fav).Error; err != nil {
-			return gin.H{"error": "Failed to favorite"}, http.StatusInternalServerError
+		if err := interactionRepo.CreateFavorite(userID, operaID); err != nil {
+			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to favorite"}
 		}
-		return gin.H{"status": "favorited"}, http.StatusCreated
+		status = "favorited"
+		favorited = true
+	} else {
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Database error"}
 	}
 
-	return gin.H{"error": "Database error"}, http.StatusInternalServerError
+	lc, fc, sc, pc := GetCounts(operaID)
+	return &InteractionResponse{
+		Status:        status,
+		Liked:         interactionRepo.IsLiked(userID, operaID),
+		Favorited:     favorited,
+		LikeCount:     lc,
+		FavoriteCount: fc,
+		ShareCount:    sc,
+		PlayCount:     pc,
+	}, nil
+}
+
+// GetCounts 返回点赞、收藏、分享、播放计数
+func GetCounts(operaID uint) (likeCount int64, favoriteCount int64, shareCount int64, playCount int64) {
+	return interactionRepo.CountLikes(operaID),
+		interactionRepo.CountFavorites(operaID),
+		interactionRepo.CountShares(operaID),
+		interactionRepo.CountPlays(operaID)
+}
+
+// BatchGetCounts 批量获取多个作品的计数
+func BatchGetCounts(operaIDs []uint) (likes, favorites, shares, plays map[uint]int64) {
+	// 使用单次查询获取所有计数
+	return interactionRepo.BatchCountAll(operaIDs)
+}
+
+// IsLiked 检查用户是否已点赞（导出供handler使用）
+func IsLiked(userID, operaID uint) bool {
+	return interactionRepo.IsLiked(userID, operaID)
+}
+
+// IsFavorited 检查用户是否已收藏（导出供handler使用）
+func IsFavorited(userID, operaID uint) bool {
+	return interactionRepo.IsFavorited(userID, operaID)
+}
+
+// ShareResponse 分享操作的响应结构
+type ShareResponse struct {
+	Message       string `json:"message"`
+	LikeCount     int64  `json:"like_count"`
+	FavoriteCount int64  `json:"favorite_count"`
+	ShareCount    int64  `json:"share_count"`
+	PlayCount     int64  `json:"play_count"`
+	NewShare      bool   `json:"new_share"` // 是否是新分享
+}
+
+// RecordShare 记录一次分享行为（游客或用户）
+// 同一用户对同一作品只记录一次分享
+func RecordShare(userID *uint, operaID uint) (*ShareResponse, error) {
+	// 检查作品是否存在
+	if err := interactionRepo.CheckOperaExists(operaID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, &ServiceError{Code: http.StatusNotFound, Message: "Opera not found"}
+		}
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to check opera"}
+	}
+
+	// 使用 FirstOrCreate 避免重复记录，同一用户对同一作品只算一次
+	isNew, err := interactionRepo.FirstOrCreateShare(userID, operaID)
+	if err != nil {
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to record share"}
+	}
+
+	lc, fc, sc, pc := GetCounts(operaID)
+	return &ShareResponse{
+		Message:       "Share recorded",
+		LikeCount:     lc,
+		FavoriteCount: fc,
+		ShareCount:    sc,
+		PlayCount:     pc,
+		NewShare:      isNew,
+	}, nil
+}
+
+// CommentResponse 评论操作的响应结构
+type CommentResponse struct {
+	Message   string `json:"message"`
+	CommentID uint   `json:"comment_id"`
 }
 
 // CreateComment 创建评论
-func CreateComment(userID, operaID uint, input models.CreateCommentRequest) (gin.H, int) {
-	db := database.DB
-
+func CreateComment(userID, operaID uint, input models.CreateCommentRequest) (*CommentResponse, error) {
 	// 检查作品
-	if err := checkOperaExists(db, operaID); err != nil {
-		return gin.H{"error": "Opera not found"}, http.StatusNotFound
+	if err := interactionRepo.CheckOperaExists(operaID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, &ServiceError{Code: http.StatusNotFound, Message: "Opera not found"}
+		}
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to check opera"}
 	}
 
 	// 检查父评论是否存在
 	if input.ParentCommentID != nil {
-		var parentComment models.Comment
+		parentComment, err := interactionRepo.GetComment(*input.ParentCommentID)
 		// 确保父评论也属于同一个 Opera
-		err := db.First(&parentComment, "comment_id = ? AND opera_id = ?", *input.ParentCommentID, operaID).Error
-		if err != nil {
-			return gin.H{"error": "Parent comment not found on this opera"}, http.StatusBadRequest
+		if err != nil || parentComment.OperaID != operaID {
+			return nil, &ServiceError{Code: http.StatusBadRequest, Message: "Parent comment not found on this opera"}
 		}
 	}
 
 	// 创建评论
-	comment := models.Comment{
+	comment := &models.Comment{
 		UserID:          sql.NullInt64{Int64: int64(userID), Valid: true},
 		OperaID:         operaID,
 		ParentCommentID: input.ParentCommentID,
 		CommentText:     input.CommentText,
 	}
 
-	if err := db.Create(&comment).Error; err != nil {
-		return gin.H{"error": "Failed to create comment"}, http.StatusInternalServerError
+	if err := interactionRepo.CreateComment(comment); err != nil {
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to create comment"}
 	}
 
-	// (在真实项目中，您可能希望将创建的评论对象返回)
-	return gin.H{"message": "Comment created successfully", "comment_id": comment.CommentID}, http.StatusCreated
+	return &CommentResponse{
+		Message:   "Comment created successfully",
+		CommentID: comment.CommentID,
+	}, nil
+}
+
+// ServiceError 服务层错误类型
+type ServiceError struct {
+	Code    int
+	Message string
+}
+
+func (e *ServiceError) Error() string {
+	return e.Message
+}
+
+// DeleteCommentResponse 删除评论的响应结构
+type DeleteCommentResponse struct {
+	Message string `json:"message"`
 }
 
 // DeleteComment 删除评论
-func DeleteComment(userID, commentID uint, userRole string) (gin.H, int) {
-	db := database.DB
-	var comment models.Comment
-
-	if err := db.First(&comment, commentID).Error; err != nil {
-		return gin.H{"error": "Comment not found"}, http.StatusNotFound
+func DeleteComment(userID, commentID uint, userRole string) (*DeleteCommentResponse, error) {
+	comment, err := interactionRepo.GetComment(commentID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, &ServiceError{Code: http.StatusNotFound, Message: "Comment not found"}
+		}
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to get comment"}
 	}
 
 	// 权限检查：必须是评论所有者 或 管理员
 	if comment.UserID.Int64 != int64(userID) && userRole != string(models.Administrator) {
-		return gin.H{"error": "Forbidden: You cannot delete this comment"}, http.StatusForbidden
+		return nil, &ServiceError{Code: http.StatusForbidden, Message: "Forbidden: You cannot delete this comment"}
 	}
 
-	if err := db.Delete(&comment).Error; err != nil {
-		return gin.H{"error": "Failed to delete comment"}, http.StatusInternalServerError
+	if err := interactionRepo.DeleteComment(commentID); err != nil {
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to delete comment"}
 	}
 
-	return gin.H{"message": "Comment deleted successfully"}, http.StatusOK
+	return &DeleteCommentResponse{Message: "Comment deleted successfully"}, nil
 }

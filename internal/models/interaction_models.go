@@ -29,6 +29,19 @@ func (Favorite) TableName() string {
 	return "favorites"
 }
 
+// --- Share (分享) ---
+type Share struct {
+	ShareID   uint64    `gorm:"column:share_id;primaryKey;autoIncrement"`
+	UserID    *uint     `gorm:"column:user_id;uniqueIndex:idx_user_opera_share"` // 可为空，支持游客
+	OperaID   uint      `gorm:"column:opera_id;not null;uniqueIndex:idx_user_opera_share"`
+	CreatedAt time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+}
+
+// TableName 指定表名
+func (Share) TableName() string {
+	return "shares"
+}
+
 // --- Comment (评论) ---
 type Comment struct {
 	CommentID       uint          `gorm:"column:comment_id;primaryKey"`

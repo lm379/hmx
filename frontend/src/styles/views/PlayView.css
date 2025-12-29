@@ -38,6 +38,18 @@
   align-items: center;
 }
 
+.video-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.video-meta svg {
+  width: 18px;
+  height: 18px;
+  fill: #9499a0;
+}
+
 .video-player-wrapper {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -97,7 +109,15 @@
 }
 
 .action-item:hover {
-  color: #00aeec;
+  color: #af000f;
+}
+
+.action-item.active {
+  color: #af000f;
+}
+
+.action-item.active .action-icon svg {
+  fill: #af000f;
 }
 
 .action-icon {

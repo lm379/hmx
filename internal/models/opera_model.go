@@ -58,6 +58,12 @@ type OperaResponse struct {
 	AiSummary   string    `json:"ai_summary"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	LikeCount     int64    `json:"like_count"`
+	FavoriteCount int64    `json:"favorite_count"`
+	ShareCount    int64    `json:"share_count"`
+	PlayCount     int64    `json:"play_count"`
+	Liked         bool     `json:"liked"`
+	Favorited     bool     `json:"favorited"`
 }
 
 // ArtistResponse 用于 API 返回的 DTO

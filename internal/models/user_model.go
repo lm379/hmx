@@ -86,3 +86,19 @@ type ForgetPasswordInput struct {
 	Code        string `json:"code" binding:"required"`
 	NewPassword string `json:"new_password" binding:"required,min=6"`
 }
+
+// UpdateUserProfileRequest DTO (PUT /users/me)
+type UpdateUserProfileRequest struct {
+	Username string  `json:"username"`
+	Phone    string  `json:"phone"`
+	Sex      UserSex `json:"sex" binding:"omitempty,oneof=Male Female Other"`
+	// Email modification requires verification code
+	Email string `json:"email" binding:"omitempty,email"`
+	Code  string `json:"code"` // Code sent to *current* email, required if Email is being changed
+}
+
+// UpdatePasswordRequest DTO (POST /users/me/password)
+type UpdatePasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}

@@ -12,6 +12,12 @@ export interface Opera {
     ai_summary: string;
     created_at: string;
     updated_at: string;
+    like_count?: number;
+    favorite_count?: number;
+    share_count?: number;
+    liked?: boolean;
+    favorited?: boolean;
+    play_count?: number;
 }
 
 export interface OperaListResponse {
@@ -54,4 +60,15 @@ export interface User {
     last_login_ip?: string;
     created_at: string;
     updated_at: string;
+}
+export interface UpdateUserProfileRequest {
+    username: string;
+    phone: string;
+    sex: string;
+    email?: string;
+    code?: string;
+}
+export interface UpdatePasswordRequest {
+    old_password: string;
+    new_password: string;
 }
