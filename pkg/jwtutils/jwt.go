@@ -18,8 +18,23 @@ type Claims struct {
 
 // GenerateToken 生成 JWT
 func GenerateToken(userID uint, username string, role string) (string, error) {
+	return generateTokenWithExpiry(userID, username, role, config.AppConfig.JWTAccessTokenExpiresIn)
+}
+
+// GenerateAccessToken 生成 Access Token
+func GenerateAccessToken(userID uint, username string, role string) (string, error) {
+	return generateTokenWithExpiry(userID, username, role, config.AppConfig.JWTAccessTokenExpiresIn)
+}
+
+// GenerateRefreshToken 生成 Refresh Token
+func GenerateRefreshToken(userID uint, username string, role string) (string, error) {
+	return generateTokenWithExpiry(userID, username, role, config.AppConfig.JWTRefreshTokenExpiresIn)
+}
+
+// generateTokenWithExpiry 生成指定过期时间的 Token
+func generateTokenWithExpiry(userID uint, username string, role string, expiresIn time.Duration) (string, error) {
 	cfg := config.AppConfig
-	expiresAt := time.Now().Add(cfg.JWTExpiresIn)
+	expiresAt := time.Now().Add(expiresIn)
 
 	claims := &Claims{
 		UserID:   userID,

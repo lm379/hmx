@@ -52,13 +52,13 @@ export default defineComponent({
           password: password.value
         });
 
-        if (response.data && response.data.data && response.data.data.token) {
-          const token = response.data.data.token;
+        if (response.data && response.data.data && response.data.data.access_token) {
+          const { access_token, refresh_token } = response.data.data;
           
           // 保存或清除凭据
           handleCredentials();
           
-          await authStore.login(token);
+          await authStore.login(access_token, refresh_token);
           
           router.push('/');
         } else {

@@ -75,3 +75,37 @@ func HandleForgetPassword(c *gin.Context) {
 	}
 	resp.Success(c, response)
 }
+
+// HandleRefreshToken (POST /api/v1/auth/refresh)
+func HandleRefreshToken(c *gin.Context) {
+	var input struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		resp.BadRequest(c, err.Error())
+		return
+	}
+
+	response, status := services.RefreshTokens(input.RefreshToken)
+	if status != http.StatusOK {
+		resp.Error(c, status, response["error"].(string))
+		return
+	}
+	resp.Success(c, response)
+}
+
+// HandleLogout (POST /api/v1/auth/logout)
+func HandleLogout(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		resp.Unauthorized(c, "Unauthorized")
+		return
+	}
+
+	response, status := services.Logout(userID.(uint))
+	if status != http.StatusOK {
+		resp.Error(c, status, response["error"].(string))
+		return
+	}
+	resp.Success(c, response)
+}

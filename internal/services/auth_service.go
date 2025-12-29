@@ -38,7 +38,7 @@ func SendVerificationCode(email string) (gin.H, int) {
 	// 存储到 Redis，设置过期时间
 	redisKey := "verify_code:" + email
 	expireTime := time.Duration(config.AppConfig.SMTPCodeExpires) * time.Minute
-	err = database.RDB.Set(database.Ctx, redisKey, code, expireTime).Err()
+	err = database.RDBVerifyCode.Set(database.Ctx, redisKey, code, expireTime).Err()
 	if err != nil {
 		return gin.H{"error": "Failed to store verification code"}, http.StatusInternalServerError
 	}
@@ -158,7 +158,7 @@ func SendVerificationCode(email string) (gin.H, int) {
 func RegisterUser(input models.RegisterInput) (gin.H, int) {
 	// 验证 Redis 中的验证码
 	redisKey := "verify_code:" + input.Email
-	code, err := database.RDB.Get(database.Ctx, redisKey).Result()
+	code, err := database.RDBVerifyCode.Get(database.Ctx, redisKey).Result()
 
 	if err != nil {
 		return gin.H{"error": "Verification code expired or invalid"}, http.StatusBadRequest
@@ -194,7 +194,7 @@ func RegisterUser(input models.RegisterInput) (gin.H, int) {
 	}
 
 	// 注册成功，删除验证码
-	database.RDB.Del(database.Ctx, redisKey)
+	database.RDBVerifyCode.Del(database.Ctx, redisKey)
 
 	return gin.H{"message": "Registration successful"}, http.StatusCreated
 }
@@ -223,20 +223,35 @@ func LoginUser(input models.LoginInput, clientIP string) (gin.H, int) {
 		"last_ip":       clientIP,
 	})
 
-	// 生成 JWT
-	token, err := jwtutils.GenerateToken(user.UserID, user.Username, string(user.Role))
+	// 生成 Access Token 和 Refresh Token
+	accessToken, err := jwtutils.GenerateAccessToken(user.UserID, user.Username, string(user.Role))
 	if err != nil {
-		return gin.H{"error": "Failed to generate token"}, http.StatusInternalServerError
+		return gin.H{"error": "Failed to generate access token"}, http.StatusInternalServerError
 	}
 
-	return gin.H{"token": token}, http.StatusOK
+	refreshToken, err := jwtutils.GenerateRefreshToken(user.UserID, user.Username, string(user.Role))
+	if err != nil {
+		return gin.H{"error": "Failed to generate refresh token"}, http.StatusInternalServerError
+	}
+
+	// 将 Refresh Token 存储到 Redis
+	refreshTokenKey := fmt.Sprintf("refresh_token:%d", user.UserID)
+	err = database.RDBToken.Set(database.Ctx, refreshTokenKey, refreshToken, config.AppConfig.JWTRefreshTokenExpiresIn).Err()
+	if err != nil {
+		return gin.H{"error": "Failed to store refresh token"}, http.StatusInternalServerError
+	}
+
+	return gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	}, http.StatusOK
 }
 
 // ForgetPassword 忘记密码处理
 func ForgetPassword(input models.ForgetPasswordInput) (gin.H, int) {
 	// 验证 Redis 中的验证码
 	redisKey := "verify_code:" + input.Email
-	code, err := database.RDB.Get(database.Ctx, redisKey).Result()
+	code, err := database.RDBVerifyCode.Get(database.Ctx, redisKey).Result()
 
 	if err != nil {
 		return gin.H{"error": "Verification code expired or invalid"}, http.StatusBadRequest
@@ -266,7 +281,61 @@ func ForgetPassword(input models.ForgetPasswordInput) (gin.H, int) {
 	}
 
 	// 删除验证码
-	database.RDB.Del(database.Ctx, redisKey)
+	database.RDBVerifyCode.Del(database.Ctx, redisKey)
 
 	return gin.H{"message": "Password reset successful"}, http.StatusOK
+}
+
+// RefreshTokens 刷新 Access Token
+func RefreshTokens(refreshToken string) (gin.H, int) {
+	// 验证 Refresh Token
+	claims, err := jwtutils.ValidateToken(refreshToken)
+	if err != nil {
+		return gin.H{"error": "Invalid refresh token"}, http.StatusUnauthorized
+	}
+
+	// 检查 Redis 中是否存在该 Refresh Token
+	refreshTokenKey := fmt.Sprintf("refresh_token:%d", claims.UserID)
+	storedToken, err := database.RDBToken.Get(database.Ctx, refreshTokenKey).Result()
+	if err != nil {
+		return gin.H{"error": "Refresh token expired or invalid"}, http.StatusUnauthorized
+	}
+
+	if storedToken != refreshToken {
+		return gin.H{"error": "Refresh token mismatch"}, http.StatusUnauthorized
+	}
+
+	// 生成新的 Access Token
+	newAccessToken, err := jwtutils.GenerateAccessToken(claims.UserID, claims.Username, claims.Role)
+	if err != nil {
+		return gin.H{"error": "Failed to generate new access token"}, http.StatusInternalServerError
+	}
+
+	// 可选：生成新的 Refresh Token（Token 轮换）
+	newRefreshToken, err := jwtutils.GenerateRefreshToken(claims.UserID, claims.Username, claims.Role)
+	if err != nil {
+		return gin.H{"error": "Failed to generate new refresh token"}, http.StatusInternalServerError
+	}
+
+	// 更新 Redis 中的 Refresh Token
+	err = database.RDBToken.Set(database.Ctx, refreshTokenKey, newRefreshToken, config.AppConfig.JWTRefreshTokenExpiresIn).Err()
+	if err != nil {
+		return gin.H{"error": "Failed to update refresh token"}, http.StatusInternalServerError
+	}
+
+	return gin.H{
+		"access_token":  newAccessToken,
+		"refresh_token": newRefreshToken,
+	}, http.StatusOK
+}
+
+// Logout 登出，删除 Refresh Token
+func Logout(userID uint) (gin.H, int) {
+	refreshTokenKey := fmt.Sprintf("refresh_token:%d", userID)
+	err := database.RDBToken.Del(database.Ctx, refreshTokenKey).Err()
+	if err != nil {
+		return gin.H{"error": "Failed to logout"}, http.StatusInternalServerError
+	}
+
+	return gin.H{"message": "Logout successful"}, http.StatusOK
 }

@@ -13,9 +13,12 @@ import (
 )
 
 var (
-	DB  *gorm.DB
-	RDB *redis.Client
-	Ctx = context.Background()
+	DB            *gorm.DB
+	RDB           *redis.Client // 默认 Redis 客户端（0号DB）
+	RDBToken      *redis.Client // Refresh Token Redis 客户端（0号DB）
+	RDBVerifyCode *redis.Client // 验证码 Redis 客户端（1号DB）
+	RDBCache      *redis.Client // 缓存 Redis 客户端（2号DB）
+	Ctx           = context.Background()
 )
 
 // InitDB 初始化 GORM
@@ -54,16 +57,47 @@ func InitDB() {
 
 // InitRedis 初始化 Redis
 func InitRedis() {
-	RDB = redis.NewClient(&redis.Options{
+	// 0号DB: Refresh Token
+	RDBToken = redis.NewClient(&redis.Options{
 		Addr:     config.AppConfig.RedisAddr,
 		Password: config.AppConfig.RedisPass,
-		DB:       config.AppConfig.RedisDB,
+		DB:       0,
 	})
 
-	_, err := RDB.Ping(Ctx).Result()
+	_, err := RDBToken.Ping(Ctx).Result()
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		log.Fatalf("Failed to connect to Redis DB 0 (Token): %v", err)
 	}
+	log.Println("Redis DB 0 (Refresh Token) connection established.")
 
-	log.Println("Redis connection established.")
+	// 1号DB: 验证码
+	RDBVerifyCode = redis.NewClient(&redis.Options{
+		Addr:     config.AppConfig.RedisAddr,
+		Password: config.AppConfig.RedisPass,
+		DB:       1,
+	})
+
+	_, err = RDBVerifyCode.Ping(Ctx).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis DB 1 (VerifyCode): %v", err)
+	}
+	log.Println("Redis DB 1 (Verify Code) connection established.")
+
+	// 2号DB: 缓存
+	RDBCache = redis.NewClient(&redis.Options{
+		Addr:     config.AppConfig.RedisAddr,
+		Password: config.AppConfig.RedisPass,
+		DB:       2,
+	})
+
+	_, err = RDBCache.Ping(Ctx).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis DB 2 (Cache): %v", err)
+	}
+	log.Println("Redis DB 2 (Cache) connection established.")
+
+	// 默认客户端指向 0号DB
+	RDB = RDBToken
+
+	log.Println("All Redis connections established.")
 }

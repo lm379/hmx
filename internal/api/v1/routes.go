@@ -22,6 +22,8 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			auth.POST("/register", HandleRegister)
 			auth.POST("/login", HandleLogin)
 			auth.POST("/forget", HandleForgetPassword)
+			auth.POST("/refresh", HandleRefreshToken)
+			auth.POST("/logout", middleware.AuthMiddleware(), HandleLogout)
 		}
 
 		// 用户路由 (User)
