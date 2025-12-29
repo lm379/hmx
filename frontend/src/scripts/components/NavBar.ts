@@ -1,42 +1,17 @@
-import { defineComponent, ref, onMounted } from 'vue';
+import { defineComponent, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
-import type { User } from '../../types';
+import { useAuthStore } from '../../stores/auth';
 
 export default defineComponent({
   name: 'NavBar',
   setup() {
     const router = useRouter();
-    const isLoggedIn = ref(false);
-    const user = ref<User | null>(null);
-
-    const checkLoginStatus = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        isLoggedIn.value = true;
-        // Set axios default authorization header
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        try {
-          const response = await axios.get('/api/v1/users/me');
-          if (response.data && response.data.data) {
-            user.value = response.data.data;
-          }
-        } catch (error) {
-          console.error("Failed to fetch user info:", error);
-          handleLogout();
-        }
-      } else {
-        isLoggedIn.value = false;
-        user.value = null;
-      }
-    };
+    const authStore = useAuthStore();
+    const { isLoggedIn, user } = storeToRefs(authStore);
 
     const handleLogout = () => {
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-      isLoggedIn.value = false;
-      user.value = null;
+      authStore.logout();
       router.push('/login');
     };
 
@@ -53,7 +28,7 @@ export default defineComponent({
     };
 
     onMounted(() => {
-      checkLoginStatus();
+      authStore.checkLoginStatus();
     });
 
     return {

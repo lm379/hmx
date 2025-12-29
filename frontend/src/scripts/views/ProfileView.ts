@@ -1,8 +1,10 @@
 import { defineComponent, ref, onMounted, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import VideoCard from '../../components/VideoCard.vue';
 import Pagination from '../../components/Pagination.vue';
-import type { User, Opera } from '../../types';
+import { useAuthStore } from '../../stores/auth';
+import type { Opera } from '../../types';
 
 export default defineComponent({
   name: 'ProfileView',
@@ -11,7 +13,8 @@ export default defineComponent({
     Pagination
   },
   setup() {
-    const user = ref<User | null>(null);
+    const authStore = useAuthStore();
+    const { user } = storeToRefs(authStore);
     const loadingUser = ref(true);
     const activeTab = ref('history');
     const list = ref<Opera[]>([]);
@@ -24,9 +27,8 @@ export default defineComponent({
     const fetchUser = async () => {
       try {
         loadingUser.value = true;
-        const response = await axios.get('/api/v1/users/me');
-        if (response.data && response.data.data) {
-          user.value = response.data.data;
+        await authStore.checkLoginStatus();
+        if (user.value) {
           fetchTabData();
         }
       } catch (error) {

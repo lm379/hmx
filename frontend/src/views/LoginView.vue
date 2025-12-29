@@ -24,6 +24,10 @@
           />
         </div>
         <div class="form-footer-actions">
+          <label class="remember-me">
+            <input type="checkbox" v-model="rememberMe" />
+            <span>记住密码</span>
+          </label>
           <router-link to="/forget-password" class="forget-pwd-link">忘记密码？</router-link>
         </div>
         <div v-if="error" class="error-message">

@@ -1,15 +1,47 @@
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { useAuthStore } from '../../stores/auth';
+
+const REMEMBER_ME_KEY = 'remember_me';
+const SAVED_ACCOUNT_KEY = 'saved_account';
+const SAVED_PASSWORD_KEY = 'saved_password';
 
 export default defineComponent({
   name: 'LoginView',
   setup() {
     const router = useRouter();
+    const authStore = useAuthStore();
     const account = ref('');
     const password = ref('');
+    const rememberMe = ref(false);
     const loading = ref(false);
     const error = ref('');
+
+    // 加载已保存的凭据
+    const loadSavedCredentials = () => {
+      const remembered = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+      if (remembered) {
+        const savedAccount = localStorage.getItem(SAVED_ACCOUNT_KEY);
+        const savedPassword = localStorage.getItem(SAVED_PASSWORD_KEY);
+        if (savedAccount) account.value = savedAccount;
+        if (savedPassword) password.value = savedPassword;
+        rememberMe.value = true;
+      }
+    };
+
+    // 保存或清除凭据
+    const handleCredentials = () => {
+      if (rememberMe.value) {
+        localStorage.setItem(REMEMBER_ME_KEY, 'true');
+        localStorage.setItem(SAVED_ACCOUNT_KEY, account.value);
+        localStorage.setItem(SAVED_PASSWORD_KEY, password.value);
+      } else {
+        localStorage.removeItem(REMEMBER_ME_KEY);
+        localStorage.removeItem(SAVED_ACCOUNT_KEY);
+        localStorage.removeItem(SAVED_PASSWORD_KEY);
+      }
+    };
 
     const handleLogin = async () => {
       try {
@@ -22,9 +54,11 @@ export default defineComponent({
 
         if (response.data && response.data.data && response.data.data.token) {
           const token = response.data.data.token;
-          localStorage.setItem('token', token);
-          // Set axios default authorization header
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // 保存或清除凭据
+          handleCredentials();
+          
+          await authStore.login(token);
           
           router.push('/');
         } else {
@@ -42,9 +76,14 @@ export default defineComponent({
       }
     };
 
+    onMounted(() => {
+      loadSavedCredentials();
+    });
+
     return {
       account,
       password,
+      rememberMe,
       loading,
       error,
       handleLogin

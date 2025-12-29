@@ -1,14 +1,17 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import axios from 'axios'
+import { useAuthStore } from './stores/auth'
 
-// Set axios default authorization header if token exists
-const token = localStorage.getItem('token');
-if (token) {
-  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-}
+const app = createApp(App)
+const pinia = createPinia()
 
-createApp(App)
-  .use(router)
-  .mount('#app')
+app.use(pinia)
+app.use(router)
+
+// 初始化认证状态
+const authStore = useAuthStore()
+authStore.checkLoginStatus()
+
+app.mount('#app')
