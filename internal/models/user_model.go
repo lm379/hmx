@@ -92,6 +92,7 @@ type UpdateUserProfileRequest struct {
 	Username string  `json:"username"`
 	Phone    string  `json:"phone"`
 	Sex      UserSex `json:"sex" binding:"omitempty,oneof=Male Female Other"`
+	Icon     string  `json:"icon"` // Object Key for avatar
 	// Email modification requires verification code
 	Email string `json:"email" binding:"omitempty,email"`
 	Code  string `json:"code"` // Code sent to *current* email, required if Email is being changed

@@ -67,6 +67,7 @@ export interface UpdateUserProfileRequest {
     sex: string;
     email?: string;
     code?: string;
+    icon?: string;
 }
 export interface UpdatePasswordRequest {
     old_password: string;

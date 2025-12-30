@@ -176,6 +176,11 @@ func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error
 		updates["sex"] = input.Sex
 	}
 
+	// Icon
+	if input.Icon != "" {
+		updates["icon"] = input.Icon
+	}
+
 	// Email (Need Verification)
 	if input.Email != "" && input.Email != user.Email.String {
 		// Check uniqueness

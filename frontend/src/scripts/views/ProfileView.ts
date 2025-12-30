@@ -36,8 +36,14 @@ export default defineComponent({
         phone: '',
         sex: 'Other',
         email: '',
-        code: ''
+        code: '',
+        icon: ''
     });
+
+    // Avatar Upload State
+    const fileInput = ref<HTMLInputElement | null>(null);
+    const selectedAvatarFile = ref<File | null>(null);
+    const avatarPreview = ref('');
 
     const fetchUser = async () => {
       try {
@@ -121,6 +127,10 @@ export default defineComponent({
         editForm.sex = user.value.sex;
         editForm.email = user.value.email || '';
         editForm.code = '';
+        editForm.icon = ''; // Reset icon update
+        selectedAvatarFile.value = null;
+        avatarPreview.value = '';
+        
         editError.value = '';
         editSuccess.value = '';
         showEditModal.value = true;
@@ -128,6 +138,52 @@ export default defineComponent({
 
     const closeEditModal = () => {
         showEditModal.value = false;
+    };
+
+    const triggerFileInput = () => {
+        fileInput.value?.click();
+    };
+
+    const handleFileChange = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        if (target.files && target.files[0]) {
+            const file = target.files[0];
+            // Simple validation
+            if (file.size > 5 * 1024 * 1024) {
+                editError.value = "图片大小不能超过 5MB";
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                editError.value = "请选择图片文件";
+                return;
+            }
+
+            selectedAvatarFile.value = file;
+            avatarPreview.value = URL.createObjectURL(file);
+            editError.value = '';
+        }
+    };
+
+    const uploadAvatar = async (): Promise<string> => {
+        if (!selectedAvatarFile.value) return '';
+        
+        // 1. Get Presigned URL
+        const presignRes = await axios.post('/api/v1/uploads/presign', {
+            upload_type: 'avatars',
+            filename: selectedAvatarFile.value.name,
+            content_type: selectedAvatarFile.value.type
+        });
+
+        const { upload_url, object_key } = presignRes.data.data;
+
+        // 2. Upload to S3/COS
+        await axios.put(upload_url, selectedAvatarFile.value, {
+            headers: {
+                'Content-Type': selectedAvatarFile.value.type
+            }
+        });
+
+        return object_key;
     };
 
     const sendVerifyCode = async () => {
@@ -153,8 +209,15 @@ export default defineComponent({
         editSuccess.value = '';
         
         try {
-            // Only send code if email is changing
             const payload: any = { ...editForm };
+            
+            // Upload Avatar if selected
+            if (selectedAvatarFile.value) {
+                const objectKey = await uploadAvatar();
+                payload.icon = objectKey;
+            }
+
+            // Only send code if email is changing
             if (user.value?.email === editForm.email) {
                 delete payload.code;
             }
@@ -169,6 +232,7 @@ export default defineComponent({
                 closeEditModal();
             }, 1500);
         } catch (e: any) {
+            console.error(e);
             editError.value = e.response?.data?.error || '更新失败';
         } finally {
             editLoading.value = false;
@@ -249,6 +313,11 @@ export default defineComponent({
       closeEditModal,
       sendVerifyCode,
       handleUpdateProfile,
+      // Avatar Upload
+      fileInput,
+      avatarPreview,
+      triggerFileInput,
+      handleFileChange,
       // Change Password
       showPasswordModal,
       passwordLoading,

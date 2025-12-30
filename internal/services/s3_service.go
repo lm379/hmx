@@ -47,11 +47,21 @@ func InitS3(ctx context.Context, cfg config.Config) {
 func GeneratePresignedUploadURL(ctx context.Context, uploadType, filename, contentType string) (string, string, error) {
 	cfg := config.AppConfig
 
+	var basePath string
+	switch uploadType {
+	case "avatars":
+		basePath = cfg.S3AvatarPath
+	case "videos":
+		basePath = cfg.S3VideoPath
+	default:
+		basePath = uploadType // Fallback to uploadType if not configured
+	}
+
 	// 生成唯一的文件路径 (Object Key)
 	// 格式: videos/uuid-v4-original-filename.mp4
 	ext := filepath.Ext(filename)
 	baseFilename := filename[:len(filename)-len(ext)]
-	objectKey := filepath.Join(uploadType, (uuid.New().String() + "-" + baseFilename + ext))
+	objectKey := filepath.Join(basePath, (uuid.New().String() + "-" + baseFilename + ext))
 
 	// 创建 PutObject 请求
 	request := &s3.PutObjectInput{

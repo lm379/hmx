@@ -63,6 +63,19 @@
         </div>
         <div class="modal-body">
           <form @submit.prevent="handleUpdateProfile">
+             <!-- Avatar Upload -->
+             <div class="form-group avatar-upload-group">
+              <label>头像</label>
+              <div class="avatar-edit-container" @click="triggerFileInput">
+                <img :src="avatarPreview || user.icon || `https://ui-avatars.com/api/?name=${user.username}&background=random&size=128`" 
+                     alt="Avatar Preview" class="avatar-preview" />
+                <div class="avatar-overlay">
+                  <span>更换头像</span>
+                </div>
+              </div>
+              <input type="file" ref="fileInput" @change="handleFileChange" accept="image/*" style="display: none" />
+            </div>
+
             <div class="form-group">
               <label>用户名</label>
               <input type="text" v-model="editForm.username" class="input-field" required />

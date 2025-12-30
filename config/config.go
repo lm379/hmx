@@ -29,6 +29,8 @@ type Config struct {
 	S3Bucket         string        `mapstructure:"S3_BUCKET_NAME"`
 	S3PresignExpires time.Duration `mapstructure:"S3_PRESIGN_EXPIRES_IN_MINUTES"`
 	S3CustomDomain   string        `mapstructure:"S3_CUSTOM_DOMAIN"`
+	S3AvatarPath     string        `mapstructure:"S3_AVATAR_PATH"`
+	S3VideoPath      string        `mapstructure:"S3_VIDEO_PATH"`
 
 	SMTPHost        string `mapstructure:"SMTP_HOST"`
 	SMTPPort        int    `mapstructure:"SMTP_PORT"`
@@ -51,6 +53,8 @@ func LoadConfig() {
 	viper.SetDefault("S3_PRESIGN_EXPIRES_IN_MINUTES", 15)
 	viper.SetDefault("JWT_ACCESS_TOKEN_EXPIRES_IN", "15m")
 	viper.SetDefault("JWT_REFRESH_TOKEN_EXPIRES_IN", "168h")
+	viper.SetDefault("S3_AVATAR_PATH", "avatars")
+	viper.SetDefault("S3_VIDEO_PATH", "videos")
 
 	AppConfig.S3PresignExpires = viper.GetDuration("S3_PRESIGN_EXPIRES_IN_MINUTES") * time.Minute
 	AppConfig.JWTAccessTokenExpiresIn = viper.GetDuration("JWT_ACCESS_TOKEN_EXPIRES_IN")
