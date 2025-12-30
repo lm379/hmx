@@ -9,6 +9,7 @@ import (
 	"github.com/lm379/hmx/internal/models"
 	"github.com/lm379/hmx/pkg/hashutils"
 	"github.com/lm379/hmx/pkg/pagination"
+	"github.com/lm379/hmx/pkg/validator"
 	"gorm.io/gorm"
 )
 
@@ -163,6 +164,9 @@ func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error
 
 	// Phone
 	if input.Phone != "" && input.Phone != user.Phone {
+		if !validator.ValidatePhone(input.Phone) {
+			return &ServiceError{Code: http.StatusBadRequest, Message: "Invalid phone number format"}
+		}
 		var count int64
 		db.Model(&models.Users{}).Where("phone = ?", input.Phone).Count(&count)
 		if count > 0 {
@@ -183,6 +187,9 @@ func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error
 
 	// Email (Need Verification)
 	if input.Email != "" && input.Email != user.Email.String {
+		if !validator.ValidateEmail(input.Email) {
+			return &ServiceError{Code: http.StatusBadRequest, Message: "Invalid email format"}
+		}
 		// Check uniqueness
 		var count int64
 		db.Model(&models.Users{}).Where("email = ?", input.Email).Count(&count)

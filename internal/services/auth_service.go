@@ -17,6 +17,7 @@ import (
 	"github.com/lm379/hmx/pkg/emailutils"
 	"github.com/lm379/hmx/pkg/hashutils"
 	"github.com/lm379/hmx/pkg/jwtutils"
+	"github.com/lm379/hmx/pkg/validator"
 	"gorm.io/gorm"
 )
 
@@ -43,6 +44,10 @@ func DeleteCode(email string) {
 
 // SendVerificationCode 生成并发送验证码
 func SendVerificationCode(email string) (gin.H, int) {
+	if !validator.ValidateEmail(email) {
+		return gin.H{"error": "Invalid email format"}, http.StatusBadRequest
+	}
+
 	// 生成 6 位随机数
 	max := big.NewInt(1000000)
 	randomNum, err := rand.Int(rand.Reader, max)
@@ -172,6 +177,13 @@ func SendVerificationCode(email string) (gin.H, int) {
 
 // RegisterUser 注册新用户
 func RegisterUser(input models.RegisterInput) (gin.H, int) {
+	if !validator.ValidateEmail(input.Email) {
+		return gin.H{"error": "Invalid email format"}, http.StatusBadRequest
+	}
+	if !validator.ValidatePhone(input.Phone) {
+		return gin.H{"error": "Invalid phone number format"}, http.StatusBadRequest
+	}
+
 	// 验证 Redis 中的验证码
 	redisKey := "verify_code:" + input.Email
 	code, err := database.RDBVerifyCode.Get(database.Ctx, redisKey).Result()

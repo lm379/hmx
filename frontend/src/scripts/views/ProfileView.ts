@@ -5,6 +5,7 @@ import VideoCard from '../../components/VideoCard.vue';
 import Pagination from '../../components/Pagination.vue';
 import { useAuthStore } from '../../stores/auth';
 import type { Opera, UpdateUserProfileRequest } from '../../types';
+import { validateEmail, validatePhone } from '../../utils/validators';
 
 export default defineComponent({
   name: 'ProfileView',
@@ -188,10 +189,19 @@ export default defineComponent({
 
     const sendVerifyCode = async () => {
         if (codeCountdown.value > 0) return;
+        if (editForm.email && !validateEmail(editForm.email)) {
+             editError.value = '邮箱格式不正确';
+             return;
+        }
         
         try {
             editError.value = '';
-            // Send to CURRENT bound email
+            // Send to CURRENT bound email. 
+            // NOTE: The backend API sends to the user's *currently* bound email, 
+            // BUT if the user is *changing* email, they might need to verify the NEW one or OLD one depending on logic.
+            // The current backend logic (HandleSendCodeToCurrentUser) sends to the USER's EXISTING email in DB.
+            // So we don't need to pass the new email here, but we should probably check if the user is allowed to send.
+            
             await axios.post('/api/v1/users/me/email-code');
             codeCountdown.value = 60;
             const timer = setInterval(() => {
@@ -204,6 +214,16 @@ export default defineComponent({
     };
 
     const handleUpdateProfile = async () => {
+        // Validation
+        if (editForm.phone && !validatePhone(editForm.phone)) {
+            editError.value = '手机号格式不正确';
+            return;
+        }
+        if (editForm.email && !validateEmail(editForm.email)) {
+            editError.value = '邮箱格式不正确';
+            return;
+        }
+
         editLoading.value = true;
         editError.value = '';
         editSuccess.value = '';
