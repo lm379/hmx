@@ -6,6 +6,7 @@ import (
 
 	"github.com/lm379/hmx/internal/models"
 	"github.com/lm379/hmx/internal/repository"
+	"github.com/lm379/hmx/pkg/urlutils"
 	"gorm.io/gorm"
 )
 
@@ -248,4 +249,64 @@ func DeleteComment(userID, commentID uint, userRole string) (*DeleteCommentRespo
 	}
 
 	return &DeleteCommentResponse{Message: "Comment deleted successfully"}, nil
+}
+
+// CommentLikeResponse 评论点赞响应
+type CommentLikeResponse struct {
+	Liked     bool  `json:"liked"`
+	LikeCount int64 `json:"like_count"`
+}
+
+// ToggleCommentLike 切换评论点赞状态
+func ToggleCommentLike(userID, commentID uint) (*CommentLikeResponse, error) {
+	// Check if comment exists
+	if _, err := interactionRepo.GetComment(commentID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, &ServiceError{Code: http.StatusNotFound, Message: "Comment not found"}
+		}
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to check comment"}
+	}
+
+	var liked bool
+	// Try to get existing like
+	_, err := interactionRepo.GetCommentLike(userID, commentID)
+	if err == nil {
+		// Found -> Unlike
+		if err := interactionRepo.DeleteCommentLike(userID, commentID); err != nil {
+			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to unlike comment"}
+		}
+		liked = false
+	} else if err == gorm.ErrRecordNotFound {
+		// Not found -> Like
+		if err := interactionRepo.CreateCommentLike(userID, commentID); err != nil {
+			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to like comment"}
+		}
+		liked = true
+	} else {
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Database error"}
+	}
+
+	count := interactionRepo.CountCommentLikes(commentID)
+	return &CommentLikeResponse{
+		Liked:     liked,
+		LikeCount: count,
+	}, nil
+}
+
+// GetComments 获取评论列表
+func GetComments(operaID uint, userID *uint) ([]models.CommentDTO, error) {
+	comments, err := interactionRepo.GetCommentsByOperaID(operaID, userID)
+	if err != nil {
+		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to fetch comments"}
+	}
+
+	// 处理头像 URL
+	for i := range comments {
+		if comments[i].UserIcon != nil && *comments[i].UserIcon != "" {
+			fullURL := urlutils.GetFullURL(*comments[i].UserIcon)
+			comments[i].UserIcon = &fullURL
+		}
+	}
+
+	return comments, nil
 }

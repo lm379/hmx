@@ -1,8 +1,10 @@
-import { defineComponent, ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { defineComponent, ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 import DPlayer from 'dplayer';
-import type { Opera } from '../../types';
+import type { Opera, Comment } from '../../types';
+import EmojiIcon from '../../assets/emoji.svg?component';
 import PlayCountIcon from '../../assets/play_count.svg?component';
 import LikeIcon from '../../assets/like.svg?component';
 import FavIcon from '../../assets/fav.svg?component';
@@ -11,6 +13,7 @@ import ShareIcon from '../../assets/share.svg?component';
 export default defineComponent({
   name: 'PlayView',
   components: {
+    EmojiIcon,
     PlayCountIcon,
     LikeIcon,
     FavIcon,
@@ -19,13 +22,46 @@ export default defineComponent({
   setup() {
     const route = useRoute();
     const router = useRouter();
+    const authStore = useAuthStore();
+    
     const opera = ref<Opera | null>(null);
     const loading = ref(true);
     const isPip = ref(false);
     const playerBox = ref<HTMLElement | null>(null);
     const dplayerContainer = ref<HTMLElement | null>(null);
     const recommendations = ref<Opera[]>([]);
+    
+    // Comments
+    const comments = ref<Comment[]>([]);
+    const newCommentText = ref('');
+    const submittingComment = ref(false);
+    const showEmojiPicker = ref(false);
+    
+    const emojiList = [
+        "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "☺️", "😚", "😙", "🥲", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🙈", "🙉", "🙊", "👍", "👎", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘", "👌", "🤏", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐", "🖖", "👋", "🤙", "💪", "🖕", "✍️", "🙏", "🦶", "🦵", "👂", "🦻", "👃", "🧠", "🦷", "🦴", "👀", "👁", "👅", "👄", "💋"
+    ];
+
     let dp: DPlayer | null = null;
+
+    const isLoggedIn = computed(() => authStore.isLoggedIn);
+    const currentUser = computed(() => authStore.user);
+
+    const toggleEmojiPicker = () => {
+        showEmojiPicker.value = !showEmojiPicker.value;
+    };
+
+    const addEmoji = (emoji: string) => {
+        newCommentText.value += emoji;
+        showEmojiPicker.value = false; // Close after picking
+    };
+    
+    // Close emoji picker when clicking outside (simple implementation using event listener on window)
+    const closeEmojiPicker = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.emoji-trigger') && !target.closest('.emoji-picker')) {
+            showEmojiPicker.value = false;
+        }
+    };
 
     const fetchOpera = async () => {
       // Destroy previous player instance if exists
@@ -49,6 +85,10 @@ export default defineComponent({
         if (recResponse.data && recResponse.data.data && recResponse.data.data.list) {
           recommendations.value = recResponse.data.data.list.slice(0, 5);
         }
+        
+        // Fetch comments
+        fetchComments();
+
       } catch (error: any) {
         console.error("Failed to fetch opera:", error);
         if (error.response && error.response.status === 404) {
@@ -60,6 +100,70 @@ export default defineComponent({
         await nextTick();
         initDPlayer();
       }
+    };
+
+    const fetchComments = async () => {
+        const id = route.params.id;
+        try {
+            const res = await axios.get(`/api/v1/operas/${id}/comments`);
+            if (res.data && res.data.data) {
+                comments.value = res.data.data;
+            }
+        } catch (e) {
+            console.error("Failed to fetch comments", e);
+        }
+    };
+
+    const postComment = async () => {
+        if (!newCommentText.value.trim()) return;
+        const id = route.params.id;
+        submittingComment.value = true;
+        try {
+            await axios.post(`/api/v1/operas/${id}/comments`, {
+                comment_text: newCommentText.value
+            });
+            newCommentText.value = '';
+            await fetchComments();
+        } catch (e: any) {
+            console.error("Failed to post comment", e);
+            alert(e.response?.data?.error || "发表评论失败");
+        } finally {
+            submittingComment.value = false;
+        }
+    };
+
+    const deleteComment = async (commentId: number) => {
+        if (!confirm("确定要删除这条评论吗？")) return;
+        try {
+            await axios.delete(`/api/v1/comments/${commentId}`);
+            comments.value = comments.value.filter(c => c.comment_id !== commentId);
+        } catch (e: any) {
+            console.error("Failed to delete comment", e);
+            alert(e.response?.data?.error || "删除失败");
+        }
+    };
+
+    const canDelete = (comment: Comment) => {
+        if (!isLoggedIn.value || !currentUser.value) return false;
+        // Check if owner or admin
+        return currentUser.value.user_id === comment.user_id || currentUser.value.role === 'Administrator';
+    };
+
+    const onToggleCommentLike = async (comment: Comment) => {
+        if (!isLoggedIn.value) {
+            alert("请先登录");
+            return;
+        }
+        try {
+            const res = await axios.post(`/api/v1/comments/${comment.comment_id}/like`);
+            const data = res.data?.data;
+            if (data) {
+                comment.liked = data.liked;
+                comment.like_count = data.like_count;
+            }
+        } catch (e) {
+            console.error("Failed to toggle comment like", e);
+        }
     };
 
     const initDPlayer = () => {
@@ -128,10 +232,12 @@ export default defineComponent({
     onMounted(() => {
       fetchOpera();
       window.addEventListener('scroll', handleScroll);
+      window.addEventListener('click', closeEmojiPicker);
     });
 
     onUnmounted(() => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('click', closeEmojiPicker);
       if (dp) {
         dp.destroy();
       }
@@ -214,11 +320,24 @@ export default defineComponent({
       playerBox,
       dplayerContainer,
       recommendations,
+      comments,
+      newCommentText,
+      submittingComment,
+      isLoggedIn,
+      currentUser,
+      showEmojiPicker,
+      emojiList,
       formatTime,
       formatArtists,
       onToggleLike,
       onToggleFavorite,
-      onShare
+      onShare,
+      postComment,
+      deleteComment,
+      canDelete,
+      toggleEmojiPicker,
+      addEmoji,
+      onToggleCommentLike
     };
   }
 });

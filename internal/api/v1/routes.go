@@ -57,6 +57,7 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			operas.POST("/:id/favorite", middleware.AuthMiddleware(), HandleToggleFavorite)
 			operas.POST("/:id/share", middleware.TryAuthMiddleware(), HandleShare)
 			operas.POST("/:id/comments", middleware.AuthMiddleware(), HandleCreateComment)
+			operas.GET("/:id/comments", middleware.TryAuthMiddleware(), HandleGetComments)
 		}
 
 		// 艺术家路由 (Artists)
@@ -71,6 +72,7 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 		comments.Use(middleware.AuthMiddleware())
 		{
 			comments.DELETE("/:id", HandleDeleteComment)
+			comments.POST("/:id/like", HandleToggleCommentLike)
 		}
 
 		// 管理员路由 (Admin)

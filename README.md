@@ -1,23 +1,70 @@
-# HMX - 黄梅戏作品管理系统
+# 黄梅戏数字化传播平台
 
-基于 Go + Gin 框架开发的黄梅戏作品管理系统，支持用户注册、登录、作品上传、点赞、收藏、评论等功能。
+基于 Go + Gin 框架开发的黄梅戏数字化传播平台，支持用户注册、登录、作品上传、点赞、收藏、评论等功能。
 
 ## 技术栈
 
-- **后端框架**: Gin
+- **后端框架**: Go + Gin
+- **前端框架**: Vue 3 + TypeScript + Vite
 - **数据库**: PostgreSQL + Redis
-- **对象存储**: AWS S3
-- **认证**: JWT
+- **对象存储**: AWS S3 或 S3 协议兼容对象存储
+- **认证**: Refresh Token + Access Token
+- **容器化**: Docker 多阶段构建
 
 ## 快速开始
 
-### 1. 安装依赖
+### 方式一：Docker 部署（推荐）
+
+#### 1. 构建 Docker 镜像
+
+```bash
+docker build -t hmx:latest .
+```
+
+#### 2. 运行容器
+
+```bash
+docker run -d \
+  -p 15379:15379 \
+  -e DATABASE_URL="your_database_url" \
+  -e REDIS_URL="your_redis_url" \
+  -e AWS_ACCESS_KEY="your_aws_key" \
+  -e AWS_SECRET_KEY="your_aws_secret" \
+  -e AWS_REGION="your_region" \
+  -e S3_BUCKET="your_bucket" \
+  -e JWT_SECRET="your_jwt_secret" \
+  -e SMTP_HOST="smtp.example.com" \
+  -e SMTP_PORT="587" \
+  -e SMTP_USER="your_email" \
+  -e SMTP_PASSWORD="your_password" \
+  --name hmx-app \
+  hmx:latest
+```
+
+#### 3. 查看日志
+
+```bash
+docker logs -f hmx-app
+```
+
+### 方式二：本地开发
+
+#### 1. 安装前端依赖并构建
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+#### 2. 安装 Go 依赖
 
 ```bash
 go mod tidy
 ```
 
-### 2. 配置环境变量
+#### 3. 配置环境变量
 
 创建配置文件或设置环境变量，包括：
 - 数据库连接信息
@@ -26,23 +73,52 @@ go mod tidy
 - SMTP 邮件配置
 - JWT 密钥
 
-### 3. 构建项目
+#### 4. 构建项目
 
 ```bash
-go build -o hmx main.go
+go build -o hmx ./cmd/server/main.go
 ```
 
-### 4. 运行项目
+#### 5. 运行项目
 
 ```bash
 ./hmx
 ```
 
+或直接运行：
+
+```bash
+go run cmd/server/main.go
+```
+
 ---
 
-## API 文档
+## 项目结构
 
-**Base URL**: `http://localhost:15379/api/v1`
+```
+hmx/
+├── cmd/server/          # 服务入口
+│   ├── main.go         # 主程序
+│   └── static/         # 前端构建产物（由 frontend/dist 生成）
+├── config/             # 配置管理
+├── database/           # 数据库初始化
+├── frontend/           # Vue 3 前端项目
+│   ├── src/           # 源代码
+│   ├── package.json   # 前端依赖
+│   └── vite.config.ts # Vite 配置
+├── internal/           # 内部包
+│   ├── api/v1/        # API 路由和处理器
+│   ├── models/        # 数据模型
+│   ├── repository/    # 数据访问层
+│   └── services/      # 业务逻辑层
+├── pkg/               # 公共工具包
+├── Dockerfile         # Docker 构建文件
+├── .dockerignore      # Docker 忽略文件
+├── go.mod             # Go 依赖管理
+└── README.md          # 项目文档
+```
+
+---
 
 ### 认证 (Authentication)
 
@@ -97,7 +173,7 @@ go build -o hmx main.go
 ---
 
 #### 用户登录
-使用邮箱和密码登录，返回 JWT Token。
+使用邮箱和密码登录，返回 Access Token 及 Refresh Token。
 
 **接口**: `POST /auth/login`
 
@@ -144,14 +220,70 @@ go build -o hmx main.go
 }
 ```
 
+---
+
+#### 刷新 Token
+使用 Refresh Token 获取新的 Access Token。
+
+**接口**: `POST /auth/refresh`
+
+**请求体**:
+```json
+{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**错误响应**:
+- `401`: Refresh Token 无效或已过期
+
+---
+
+#### 登出
+使当前的 Refresh Token 失效。
+
+**接口**: `POST /auth/logout`
+
+**请求头**: 需要 Access Token
+
+**请求体**:
+```json
+{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "message": "Logged out successfully"
+  }
+}
+```
+
 
 ---
 
 ### 用户 (Users)
 
-以下接口需要在请求头中携带 JWT Token:
+以下接口需要在请求头中携带 Access Token:
 ```
-Authorization: Bearer <your_jwt_token>
+Authorization: Bearer <access token>
 ```
 
 #### 获取当前用户信息
@@ -226,6 +358,129 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
+#### 获取用户观看历史
+获取当前用户的观看历史记录。
+
+**接口**: `GET /users/me/history`
+
+**请求头**: 需要 Access Token
+
+**查询参数**:
+- `page` (int, 可选): 页码，默认 1
+- `page_size` (int, 可选): 每页数量，默认 10
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "list": [
+      {
+        "opera_id": 1,
+        "opera_title": "天仙配",
+        "avatar": "https://...",
+        "last_watched_at": "2025-01-01T12:00:00Z",
+        "watch_duration": 1800
+      }
+    ],
+    "pagination": {
+      "total": 50,
+      "page": 1,
+      "page_size": 10
+    }
+  }
+}
+```
+
+---
+
+#### 更新用户信息
+更新当前用户的个人资料。
+
+**接口**: `PUT /users/me`
+
+**请求头**: 需要 Access Token
+
+**请求体**:
+```json
+{
+  "username": "新用户名",
+  "phone": "13900139000",
+  "sex": "Male",
+  "icon": "avatars/uuid-avatar.jpg"
+}
+```
+
+**字段说明**:
+- 所有字段均为可选
+- `sex` 可选值: `Male`, `Female`, `Other`
+- `icon` 为头像的 S3 object_key
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "message": "Profile updated successfully"
+  }
+}
+```
+
+---
+
+#### 修改密码
+修改当前用户的密码。
+
+**接口**: `POST /users/me/password`
+
+**请求头**: 需要 Access Token
+
+**请求体**:
+```json
+{
+  "old_password": "old_password123",
+  "new_password": "new_password456"
+}
+```
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "message": "Password updated successfully"
+  }
+}
+```
+
+**错误响应**:
+- `401`: 旧密码错误
+
+---
+
+#### 发送验证码到当前用户
+向当前登录用户的邮箱发送验证码（用于敏感操作验证）。
+
+**接口**: `POST /users/me/email-code`
+
+**请求头**: 需要 Access Token
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "message": "Verification code sent"
+  }
+}
+```
+
+---
+
 ### 文件上传 (Uploads)
 
 #### 请求预签名上传 URL
@@ -233,7 +488,7 @@ Authorization: Bearer <your_jwt_token>
 
 **接口**: `POST /uploads/presign`
 
-**请求头**: 需要 JWT Token
+**请求头**: 需要 Access Token
 
 **请求体**:
 ```json
@@ -332,12 +587,45 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
+#### 记录观看历史
+记录用户观看作品的历史（游客也可以记录，但不会关联到用户）。
+
+**接口**: `POST /operas/:id/history`
+
+**请求头**: 可选 Access Token（如果提供则关联用户）
+
+**路径参数**:
+- `id` (int): 作品 ID
+
+**请求体**:
+```json
+{
+  "watch_duration": 1800
+}
+```
+
+**字段说明**:
+- `watch_duration`: 观看时长（秒）
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "message": "History recorded"
+  }
+}
+```
+
+---
+
 #### 创建作品
 用户上传新作品（需要先通过预签名上传文件）。
 
 **接口**: `POST /operas/`
 
-**请求头**: 需要 JWT Token
+**请求头**: 需要 Access Token
 
 **请求体**:
 ```json
@@ -370,7 +658,7 @@ Authorization: Bearer <your_jwt_token>
 
 **接口**: `POST /operas/:id/like`
 
-**请求头**: 需要 JWT Token
+**请求头**: 需要 Access Token
 
 **路径参数**:
 - `id` (int): 作品 ID
@@ -395,7 +683,7 @@ Authorization: Bearer <your_jwt_token>
 
 **接口**: `POST /operas/:id/favorite`
 
-**请求头**: 需要 JWT Token
+**请求头**: 需要 Access Token
 
 **路径参数**:
 - `id` (int): 作品 ID
@@ -415,12 +703,39 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
+#### 分享作品
+记录作品分享（游客也可以分享，但不会关联到用户）。
+
+**接口**: `POST /operas/:id/share`
+
+**请求头**: 可选 Access Token
+
+**路径参数**:
+- `id` (int): 作品 ID
+
+**成功响应** (200 或 201):
+```json
+{
+  "code": 201,
+  "msg": "success",
+  "data": {
+    "message": "Share recorded",
+    "new_share": true
+  }
+}
+```
+
+**字段说明**:
+- `new_share`: `true` 表示首次分享（返回 201），`false` 表示重复分享（返回 200）
+
+---
+
 #### 创建评论
 对指定作品发表评论。
 
 **接口**: `POST /operas/:id/comments`
 
-**请求头**: 需要 JWT Token
+**请求头**: 需要 Access Token
 
 **路径参数**:
 - `id` (int): 作品 ID
@@ -447,6 +762,126 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
+#### 获取作品评论列表
+获取指定作品的评论列表。
+
+**接口**: `GET /operas/:id/comments`
+
+**请求头**: 可选 Access Token（登录用户可以看到自己的点赞状态）
+
+**路径参数**:
+- `id` (int): 作品 ID
+
+**查询参数**:
+- `page` (int, 可选): 页码，默认 1
+- `page_size` (int, 可选): 每页数量，默认 10
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "list": [
+      {
+        "comment_id": 1,
+        "user_id": 10,
+        "username": "张三",
+        "user_icon": "https://...",
+        "content": "这部作品太精彩了！",
+        "parent_id": 0,
+        "created_at": "2025-01-01T10:00:00Z",
+        "replies": []
+      }
+    ],
+    "pagination": {
+      "total": 100,
+      "page": 1,
+      "page_size": 10
+    }
+  }
+}
+```
+
+---
+
+### 艺术家 (Artists)
+
+#### 获取艺术家列表
+获取所有艺术家的列表，支持分页。
+
+**接口**: `GET /artists/`
+
+**查询参数**:
+- `page` (int, 可选): 页码，默认 1
+- `page_size` (int, 可选): 每页数量，默认 10
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "list": [
+      {
+        "artist_id": 1,
+        "name": "韩再芬",
+        "avatar": "https://s3.amazonaws.com/bucket/artists/artist1.jpg",
+        "bio": "著名黄梅戏表演艺术家",
+        "birth_date": "1968-03-20",
+        "created_at": "2025-01-01T00:00:00Z"
+      }
+    ],
+    "pagination": {
+      "total": 50,
+      "page": 1,
+      "page_size": 10
+    }
+  }
+}
+```
+
+---
+
+#### 获取艺术家详情
+根据艺术家 ID 获取详细信息及其作品列表。
+
+**接口**: `GET /artists/:id`
+
+**路径参数**:
+- `id` (int): 艺术家 ID
+
+**成功响应** (200):
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "artist": {
+      "artist_id": 1,
+      "name": "韩再芬",
+      "avatar": "https://...",
+      "bio": "著名黄梅戏表演艺术家",
+      "birth_date": "1968-03-20",
+      "created_at": "2025-01-01T00:00:00Z"
+    },
+    "operas": [
+      {
+        "opera_id": 1,
+        "opera_title": "女驸马",
+        "avatar": "https://...",
+        "description": "经典剧目"
+      }
+    ]
+  }
+}
+```
+
+**错误响应**:
+- `404`: 艺术家不存在
+
+---
+
 ### 评论 (Comments)
 
 #### 删除评论
@@ -454,7 +889,7 @@ Authorization: Bearer <your_jwt_token>
 
 **接口**: `DELETE /comments/:id`
 
-**请求头**: 需要 JWT Token
+**请求头**: 需要 Access Token
 
 **路径参数**:
 - `id` (int): 评论 ID
@@ -481,7 +916,7 @@ Authorization: Bearer <your_jwt_token>
 
 **接口**: `DELETE /admin/operas/:id`
 
-**请求头**: 需要 JWT Token (管理员)
+**请求头**: 需要 Access Token (管理员)
 
 **路径参数**:
 - `id` (int): 作品 ID
@@ -516,12 +951,12 @@ Authorization: Bearer <your_jwt_token>
 
 ## 认证说明
 
-### JWT Token 使用
+### Access Token 使用
 
-1. 登录成功后，服务器返回 JWT Token
+1. 登录成功后，服务器返回 Access Token
 2. 后续需要认证的请求，在请求头中携带：
    ```
-   Authorization: Bearer <your_jwt_token>
+   Authorization: Bearer <your_access_token>
    ```
 3. Token 包含用户 ID、用户名、角色等信息
 4. 中间件会自动验证 Token 并将用户信息注入到上下文中

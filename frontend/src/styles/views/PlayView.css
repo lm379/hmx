@@ -136,12 +136,262 @@
 /* Comments */
 .comments-section {
   margin-top: 24px;
+  border-top: 1px solid #e3e5e7;
+  padding-top: 20px;
 }
 
 .section-title {
   font-size: 18px;
   font-weight: 500;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+/* Comment Input Area */
+.comment-send-section {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.user-face {
+    flex-shrink: 0;
+}
+
+.user-avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.textarea-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e3e5e7;
+    border-radius: 6px;
+    background-color: #f1f2f3;
+    transition: background-color 0.2s, border-color 0.2s;
+    position: relative;
+}
+
+.textarea-container:focus-within {
+    background-color: #fff;
+    border-color: #c9ccd0;
+}
+
+.comment-input {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: #18191c;
+    font-size: 14px;
+    resize: none;
+    min-height: 65px;
+    outline: none;
+    font-family: inherit;
+    line-height: 20px;
+}
+
+.comment-input:disabled {
+    cursor: not-allowed;
+    color: #9499a0;
+}
+
+.comment-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px 10px 10px;
+}
+
+.emoji-trigger {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #61666d;
+    font-size: 13px;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.emoji-trigger:hover {
+    background-color: #e3e5e7;
+}
+
+.emoji-trigger.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.emoji-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.submit-btn {
+    background-color: #00AEEC;
+    color: white;
+    border: none;
+    padding: 6px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    height: 32px;
+    line-height: 1;
+}
+
+.submit-btn:hover {
+    background-color: #009CD6;
+}
+
+.submit-btn:disabled {
+    background-color: #7fd6f5; /* Light blue instead of grey for disabled state usually looks better, or stick to grey */
+    background-color: #e3e5e7;
+    color: #9499a0;
+    cursor: not-allowed;
+}
+
+/* Emoji Picker */
+.emoji-picker {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: #fff;
+    border: 1px solid #e3e5e7;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 10px;
+    width: 320px;
+    z-index: 100;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.emoji-item {
+    cursor: pointer;
+    font-size: 20px;
+    text-align: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.emoji-item:hover {
+    background-color: #f1f2f3;
+}
+
+/* Comment List */
+.comment-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.comment-item {
+    display: flex;
+    gap: 16px;
+    padding: 20px 0;
+    border-bottom: 1px solid #e3e5e7;
+}
+
+.comment-item:last-child {
+    border-bottom: none;
+}
+
+.comment-avatar {
+    flex-shrink: 0;
+}
+
+.comment-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-info {
+    margin-bottom: 4px;
+}
+
+.username {
+    font-size: 13px;
+    font-weight: 500;
+    color: #61666d;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.username:hover {
+    color: #00AEEC;
+}
+
+.comment-text {
+    font-size: 15px;
+    color: #18191c;
+    line-height: 24px;
+    white-space: pre-wrap;
+    margin-bottom: 8px;
+}
+
+.comment-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: #9499a0;
+}
+
+.time {
+    margin-right: 4px;
+}
+
+.action-btn {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+}
+
+.action-btn:hover {
+    color: #00AEEC;
+}
+
+.action-btn.active {
+    color: #00AEEC;
+}
+
+.action-btn.active svg {
+    fill: #00AEEC;
+}
+
+.action-btn svg {
+    fill: currentColor;
+}
+
+.delete-btn {
+    /* Optional specific style for delete */
+}
+
+.no-comments {
+    text-align: center;
+    color: #9499a0;
+    padding: 40px 0;
+    font-size: 14px;
 }
 
 /* Sidebar Recs */

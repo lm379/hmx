@@ -59,6 +59,18 @@ func (Comment) TableName() string {
 	return "comments"
 }
 
+// --- CommentLike (评论点赞) ---
+type CommentLike struct {
+	UserID    uint      `gorm:"column:user_id;primaryKey"`
+	CommentID uint      `gorm:"column:comment_id;primaryKey"`
+	CreatedAt time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+}
+
+// TableName 指定表名
+func (CommentLike) TableName() string {
+	return "comment_likes"
+}
+
 // --- PlayHistory (播放历史) ---
 type PlayHistory struct {
 	PlayID    uint      `gorm:"column:play_id;primaryKey"`
@@ -77,4 +89,18 @@ func (PlayHistory) TableName() string {
 type CreateCommentRequest struct {
 	CommentText     string `json:"comment_text" binding:"required,max=1000"`
 	ParentCommentID *uint  `json:"parent_comment_id"` // 可选，用于回复
+}
+
+// CommentDTO 用于返回评论列表，包含用户信息
+type CommentDTO struct {
+	CommentID       uint      `json:"comment_id"`
+	UserID          uint      `json:"user_id"` // 0 if null
+	Username        string    `json:"username"`
+	UserIcon        *string   `json:"user_icon"`
+	OperaID         uint      `json:"opera_id"`
+	ParentCommentID *uint     `json:"parent_comment_id"`
+	CommentText     string    `json:"comment_text"`
+	LikeCount       int64     `json:"like_count"` // 点赞数
+	Liked           bool      `json:"liked"`      // 当前用户是否已点赞
+	CreatedAt       time.Time `json:"created_at"`
 }

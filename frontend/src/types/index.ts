@@ -73,3 +73,16 @@ export interface UpdatePasswordRequest {
     old_password: string;
     new_password: string;
 }
+
+export interface Comment {
+    comment_id: number;
+    user_id: number;
+    username: string;
+    user_icon?: string;
+    opera_id: number;
+    parent_comment_id?: number;
+    comment_text: string;
+    like_count: number;
+    liked: boolean;
+    created_at: string;
+}

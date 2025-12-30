@@ -142,3 +142,51 @@ func HandleDeleteComment(c *gin.Context) {
 	}
 	resp.Success(c, result)
 }
+
+// HandleToggleCommentLike (POST /api/v1/comments/:id/like)
+func HandleToggleCommentLike(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	idParam := c.Param("id")
+	commentID, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		resp.BadRequest(c, "Invalid comment ID")
+		return
+	}
+
+	result, err := services.ToggleCommentLike(userID, uint(commentID))
+	if err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
+		return
+	}
+	resp.Success(c, result)
+}
+
+// HandleGetComments (GET /api/v1/operas/:id/comments)
+func HandleGetComments(c *gin.Context) {
+	operaID, err := getOperaIDParam(c)
+	if err != nil {
+		resp.BadRequest(c, "Invalid opera ID")
+		return
+	}
+
+	var uidPtr *uint
+	if v, exists := c.Get("userID"); exists {
+		u := v.(uint)
+		uidPtr = &u
+	}
+
+	comments, err := services.GetComments(operaID, uidPtr)
+	if err != nil {
+		if svcErr, ok := err.(*services.ServiceError); ok {
+			resp.Error(c, svcErr.Code, svcErr.Message)
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
+		return
+	}
+	resp.Success(c, comments)
+}

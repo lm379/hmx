@@ -68,7 +68,7 @@ func (r *InteractionRepo) BatchCountLikes(operaIDs []uint) map[uint]int64 {
 		Where("opera_id IN ?", operaIDs).
 		Group("opera_id").
 		Scan(&results)
-	
+
 	countMap := make(map[uint]int64)
 	for _, result := range results {
 		countMap[result.OperaID] = result.Count
@@ -126,7 +126,7 @@ func (r *InteractionRepo) BatchCountFavorites(operaIDs []uint) map[uint]int64 {
 		Where("opera_id IN ?", operaIDs).
 		Group("opera_id").
 		Scan(&results)
-	
+
 	countMap := make(map[uint]int64)
 	for _, result := range results {
 		countMap[result.OperaID] = result.Count
@@ -174,7 +174,7 @@ func (r *InteractionRepo) BatchCountShares(operaIDs []uint) map[uint]int64 {
 		Where("opera_id IN ?", operaIDs).
 		Group("opera_id").
 		Scan(&results)
-	
+
 	countMap := make(map[uint]int64)
 	for _, result := range results {
 		countMap[result.OperaID] = result.Count
@@ -207,7 +207,7 @@ func (r *InteractionRepo) BatchCountAll(operaIDs []uint) (likes, favorites, shar
 	}
 
 	var results []Result
-	
+
 	// 使用子查询一次性获取所有计数
 	r.getDB().Raw(`
 		SELECT 
@@ -276,4 +276,64 @@ func (r *InteractionRepo) GetComment(commentID uint) (*models.Comment, error) {
 // DeleteComment 删除评论
 func (r *InteractionRepo) DeleteComment(commentID uint) error {
 	return r.getDB().Delete(&models.Comment{}, commentID).Error
+}
+
+// GetCommentLike 获取评论点赞
+func (r *InteractionRepo) GetCommentLike(userID, commentID uint) (*models.CommentLike, error) {
+	var like models.CommentLike
+	err := r.getDB().Where("user_id = ? AND comment_id = ?", userID, commentID).First(&like).Error
+	if err != nil {
+		return nil, err
+	}
+	return &like, nil
+}
+
+// CreateCommentLike 创建评论点赞
+func (r *InteractionRepo) CreateCommentLike(userID, commentID uint) error {
+	like := models.CommentLike{UserID: userID, CommentID: commentID}
+	return r.getDB().Create(&like).Error
+}
+
+// DeleteCommentLike 删除评论点赞
+func (r *InteractionRepo) DeleteCommentLike(userID, commentID uint) error {
+	return r.getDB().Where("user_id = ? AND comment_id = ?", userID, commentID).Delete(&models.CommentLike{}).Error
+}
+
+// CountCommentLikes 统计评论点赞数
+func (r *InteractionRepo) CountCommentLikes(commentID uint) int64 {
+	var count int64
+	r.getDB().Model(&models.CommentLike{}).Where("comment_id = ?", commentID).Count(&count)
+	return count
+}
+
+// GetCommentsByOperaID 获取作品的评论列表 (Updated to include like count and user liked status)
+func (r *InteractionRepo) GetCommentsByOperaID(operaID uint, currentUserID *uint) ([]models.CommentDTO, error) {
+	var comments []models.CommentDTO
+
+	query := r.getDB().Table("comments").
+		Select(`
+			comments.comment_id, 
+			COALESCE(comments.user_id, 0) as user_id, 
+			COALESCE(users.username, '已注销用户') as username, 
+			users.icon as user_icon, 
+			comments.opera_id, 
+			comments.parent_comment_id, 
+			comments.comment_text, 
+			comments.created_at,
+			(SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.comment_id) as like_count
+		`).
+		Joins("LEFT JOIN users ON users.user_id = comments.user_id").
+		Where("comments.opera_id = ?", operaID).
+		Order("comments.created_at DESC")
+
+	if currentUserID != nil {
+		query = query.Select(query.Statement.Selects[0]+`, 
+			EXISTS(SELECT 1 FROM comment_likes WHERE comment_likes.comment_id = comments.comment_id AND comment_likes.user_id = ?) as liked
+		`, *currentUserID)
+	} else {
+		query = query.Select(query.Statement.Selects[0] + `, false as liked`)
+	}
+
+	err := query.Scan(&comments).Error
+	return comments, err
 }
