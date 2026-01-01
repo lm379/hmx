@@ -236,7 +236,7 @@
 }
 
 .submit-btn {
-    background-color: #00AEEC;
+    background-color: #af000f;
     color: white;
     border: none;
     padding: 6px 20px;
@@ -249,11 +249,11 @@
 }
 
 .submit-btn:hover {
-    background-color: #009CD6;
+    background-color: #af000f;
 }
 
 .submit-btn:disabled {
-    background-color: #7fd6f5; /* Light blue instead of grey for disabled state usually looks better, or stick to grey */
+    background-color: #af000f; /* Light blue instead of grey for disabled state usually looks better, or stick to grey */
     background-color: #e3e5e7;
     color: #9499a0;
     cursor: not-allowed;
@@ -336,7 +336,7 @@
 }
 
 .username:hover {
-    color: #00AEEC;
+    color: #afafaf;
 }
 
 .comment-text {
@@ -368,15 +368,15 @@
 }
 
 .action-btn:hover {
-    color: #00AEEC;
+    color: #af000f;
 }
 
 .action-btn.active {
-    color: #00AEEC;
+    color: #af000f;
 }
 
 .action-btn.active svg {
-    fill: #00AEEC;
+    fill: #af000f;
 }
 
 .action-btn svg {
@@ -385,6 +385,133 @@
 
 .delete-btn {
     /* Optional specific style for delete */
+}
+
+/* Reply Input */
+.reply-send-section {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.reply-send-section .user-face {
+    flex-shrink: 0;
+}
+
+.reply-send-section .user-avatar-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.reply-textarea-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e3e5e7;
+    border-radius: 6px;
+    background-color: #f1f2f3;
+    transition: background-color 0.2s, border-color 0.2s;
+    position: relative;
+}
+
+.reply-textarea-container:focus-within {
+    background-color: #fff;
+    border-color: #c9ccd0;
+}
+
+.reply-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: #18191c;
+    font-size: 14px;
+    resize: none;
+    min-height: 50px;
+    outline: none;
+    font-family: inherit;
+    line-height: 20px;
+}
+
+.reply-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px 8px 8px;
+    position: relative;
+}
+
+.reply-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.reply-actions .cancel-btn {
+    padding: 6px 16px;
+    border: 1px solid #e3e5e7;
+    background-color: white;
+    color: #61666d;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.reply-actions .cancel-btn:hover {
+    background-color: #f6f7f8;
+}
+
+.reply-actions .submit-btn {
+    padding: 6px 16px;
+    border: none;
+    background-color: #af000f;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.reply-actions .submit-btn:hover:not(:disabled) {
+    background-color: #af000f;
+}
+
+.reply-actions .submit-btn:disabled {
+    background-color: #c9ccd0;
+    cursor: not-allowed;
+}
+
+/* Replies List */
+.replies-list {
+    margin-top: 12px;
+    padding-left: 40px;
+    border-left: 2px solid #e3e5e7;
+}
+
+.reply-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f2f3;
+}
+
+.reply-item:last-child {
+    border-bottom: none;
+}
+
+.reply-item .comment-avatar {
+    flex-shrink: 0;
+}
+
+.reply-item .user-avatar-img {
+    width: 32px;
+    height: 32px;
+}
+
+.reply-item .comment-main-content {
+    flex: 1;
 }
 
 .no-comments {

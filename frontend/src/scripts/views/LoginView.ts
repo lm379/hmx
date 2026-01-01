@@ -60,7 +60,9 @@ export default defineComponent({
           
           await authStore.login(access_token, refresh_token);
           
-          router.push('/');
+          // 获取redirect参数，如果有则跳转回原页面，否则跳转到首页
+          const redirect = router.currentRoute.value.query.redirect as string;
+          router.push(redirect || '/');
         } else {
           error.value = '登录失败，请重试';
         }

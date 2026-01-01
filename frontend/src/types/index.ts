@@ -85,4 +85,8 @@ export interface Comment {
     like_count: number;
     liked: boolean;
     created_at: string;
+    replies?: Comment[];
+    showReplyInput?: boolean;
+    replyText?: string;
+    showReplyEmojiPicker?: boolean;
 }

@@ -20,7 +20,13 @@ export default defineComponent({
     };
 
     const goLogin = () => {
-      router.push('/login');
+      // 保存当前路径，登录后跳转回来
+      const currentPath = router.currentRoute.value.fullPath;
+      if (currentPath !== '/login' && currentPath !== '/register') {
+        router.push({ path: '/login', query: { redirect: currentPath } });
+      } else {
+        router.push('/login');
+      }
     };
 
     const goProfile = () => {

@@ -163,7 +163,7 @@
   </div>
   <div v-else-if="!loadingUser" class="not-logged-in">
     <p>请先登录查看个人中心</p>
-    <button class="login-btn" @click="$router.push('/login')">去登录</button>
+    <button class="login-btn" @click="$router.push({ path: '/login', query: { redirect: '/profile' } })">去登录</button>
   </div>
 </template>
 

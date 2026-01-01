@@ -1,6 +1,7 @@
 import { defineComponent, ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import DPlayer from 'dplayer';
 import type { Opera, Comment } from '../../types';
@@ -23,22 +24,20 @@ export default defineComponent({
     const route = useRoute();
     const router = useRouter();
     const authStore = useAuthStore();
-    
+
     const opera = ref<Opera | null>(null);
     const loading = ref(true);
     const isPip = ref(false);
     const playerBox = ref<HTMLElement | null>(null);
     const dplayerContainer = ref<HTMLElement | null>(null);
     const recommendations = ref<Opera[]>([]);
-    
-    // Comments
-    const comments = ref<Comment[]>([]);
     const newCommentText = ref('');
     const submittingComment = ref(false);
     const showEmojiPicker = ref(false);
-    
+
+    const comments = ref<Comment[]>([]);
     const emojiList = [
-        "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "☺️", "😚", "😙", "🥲", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🙈", "🙉", "🙊", "👍", "👎", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘", "👌", "🤏", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐", "🖖", "👋", "🤙", "💪", "🖕", "✍️", "🙏", "🦶", "🦵", "👂", "🦻", "👃", "🧠", "🦷", "🦴", "👀", "👁", "👅", "👄", "💋"
+      "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "☺️", "😚", "😙", "🥲", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🙈", "🙉", "🙊", "👍", "👎", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘", "👌", "🤏", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐", "🖖", "👋", "🤙", "💪", "🖕", "✍️", "🙏", "🦶", "🦵", "👂", "🦻", "👃", "🧠", "🦷", "🦴", "👀", "👁", "👅", "👄", "💋"
     ];
 
     let dp: DPlayer | null = null;
@@ -47,29 +46,50 @@ export default defineComponent({
     const currentUser = computed(() => authStore.user);
 
     const toggleEmojiPicker = () => {
-        showEmojiPicker.value = !showEmojiPicker.value;
+      showEmojiPicker.value = !showEmojiPicker.value;
     };
 
     const addEmoji = (emoji: string) => {
-        newCommentText.value += emoji;
-        showEmojiPicker.value = false; // Close after picking
+      newCommentText.value += emoji;
+      showEmojiPicker.value = false; // Close after picking
     };
-    
+
+    const toggleReplyEmojiPicker = (comment: Comment) => {
+      comment.showReplyEmojiPicker = !comment.showReplyEmojiPicker;
+    };
+
+    const addEmojiToReply = (comment: Comment, emoji: string) => {
+      if (!comment.replyText) {
+        comment.replyText = '';
+      }
+      comment.replyText += emoji;
+      comment.showReplyEmojiPicker = false; // Close after picking
+    };
+
     // Close emoji picker when clicking outside (simple implementation using event listener on window)
     const closeEmojiPicker = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        if (!target.closest('.emoji-trigger') && !target.closest('.emoji-picker')) {
-            showEmojiPicker.value = false;
-        }
+      const target = e.target as HTMLElement;
+      if (!target.closest('.emoji-trigger') && !target.closest('.emoji-picker')) {
+        showEmojiPicker.value = false;
+        // 关闭所有回复框的表情选择器
+        comments.value.forEach(comment => {
+          comment.showReplyEmojiPicker = false;
+          if (comment.replies) {
+            comment.replies.forEach(reply => {
+              reply.showReplyEmojiPicker = false;
+            });
+          }
+        });
+      }
     };
 
     const fetchOpera = async () => {
       // Destroy previous player instance if exists
       if (dp) {
-          dp.destroy();
-          dp = null;
+        dp.destroy();
+        dp = null;
       }
-      
+
       try {
         loading.value = true;
         const id = route.params.id;
@@ -85,14 +105,14 @@ export default defineComponent({
         if (recResponse.data && recResponse.data.data && recResponse.data.data.list) {
           recommendations.value = recResponse.data.data.list.slice(0, 5);
         }
-        
+
         // Fetch comments
         fetchComments();
 
       } catch (error: any) {
         console.error("Failed to fetch opera:", error);
         if (error.response && error.response.status === 404) {
-            router.replace('/404');
+          router.replace('/404');
         }
       } finally {
         loading.value = false;
@@ -103,111 +123,176 @@ export default defineComponent({
     };
 
     const fetchComments = async () => {
-        const id = route.params.id;
-        try {
-            const res = await axios.get(`/api/v1/operas/${id}/comments`);
-            if (res.data && res.data.data) {
-                comments.value = res.data.data;
+      const id = route.params.id;
+      try {
+        const res = await axios.get(`/api/v1/operas/${id}/comments`);
+        if (res.data && res.data.data) {
+          // 组织评论为树形结构
+          const allComments = res.data.data as Comment[];
+          const commentMap = new Map<number, Comment>();
+          const rootComments: Comment[] = [];
+
+          // 初始化所有评论
+          allComments.forEach(comment => {
+            comment.replies = [];
+            comment.showReplyInput = false;
+            comment.replyText = '';
+            comment.showReplyEmojiPicker = false;
+            commentMap.set(comment.comment_id, comment);
+          });
+
+          // 构建树形结构
+          allComments.forEach(comment => {
+            if (comment.parent_comment_id) {
+              const parent = commentMap.get(comment.parent_comment_id);
+              if (parent) {
+                parent.replies!.push(comment);
+              }
+            } else {
+              rootComments.push(comment);
             }
-        } catch (e) {
-            console.error("Failed to fetch comments", e);
+          });
+
+          comments.value = rootComments;
         }
+      } catch (e) {
+        console.error("Failed to fetch comments", e);
+      }
     };
 
     const postComment = async () => {
-        if (!newCommentText.value.trim()) return;
-        const id = route.params.id;
-        submittingComment.value = true;
-        try {
-            await axios.post(`/api/v1/operas/${id}/comments`, {
-                comment_text: newCommentText.value
-            });
-            newCommentText.value = '';
-            await fetchComments();
-        } catch (e: any) {
-            console.error("Failed to post comment", e);
-            alert(e.response?.data?.error || "发表评论失败");
-        } finally {
-            submittingComment.value = false;
-        }
+      if (!newCommentText.value.trim()) return;
+      const id = route.params.id;
+      submittingComment.value = true;
+      try {
+        await axios.post(`/api/v1/operas/${id}/comments`, {
+          comment_text: newCommentText.value
+        });
+        newCommentText.value = '';
+        await fetchComments();
+      } catch (e: any) {
+        console.error("Failed to post comment", e);
+        ElMessage.error(e.response?.data?.error || "发表评论失败");
+      } finally {
+        submittingComment.value = false;
+      }
     };
 
     const deleteComment = async (commentId: number) => {
-        if (!confirm("确定要删除这条评论吗？")) return;
-        try {
-            await axios.delete(`/api/v1/comments/${commentId}`);
-            comments.value = comments.value.filter(c => c.comment_id !== commentId);
-        } catch (e: any) {
-            console.error("Failed to delete comment", e);
-            alert(e.response?.data?.error || "删除失败");
+      try {
+        await ElMessageBox.confirm(
+          '确定要删除这条评论吗？',
+          '提示',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        );
+        await axios.delete(`/api/v1/comments/${commentId}`);
+        ElMessage.success("删除成功");
+        await fetchComments();
+      } catch (e: any) {
+        if (e !== 'cancel') {
+          console.error("Failed to delete comment", e);
+          ElMessage.error(e.response?.data?.error || "删除失败");
         }
+      }
     };
 
     const canDelete = (comment: Comment) => {
-        if (!isLoggedIn.value || !currentUser.value) return false;
-        // Check if owner or admin
-        return currentUser.value.user_id === comment.user_id || currentUser.value.role === 'Administrator';
+      if (!isLoggedIn.value || !currentUser.value) return false;
+      // Check if owner or admin
+      return currentUser.value.user_id === comment.user_id || currentUser.value.role === 'Administrator';
     };
 
     const onToggleCommentLike = async (comment: Comment) => {
-        if (!isLoggedIn.value) {
-            alert("请先登录");
-            return;
+      if (!isLoggedIn.value) {
+        ElMessage.warning("请先登录");
+        return;
+      }
+      try {
+        const res = await axios.post(`/api/v1/comments/${comment.comment_id}/like`);
+        const data = res.data?.data;
+        if (data) {
+          comment.liked = data.liked;
+          comment.like_count = data.like_count;
         }
-        try {
-            const res = await axios.post(`/api/v1/comments/${comment.comment_id}/like`);
-            const data = res.data?.data;
-            if (data) {
-                comment.liked = data.liked;
-                comment.like_count = data.like_count;
-            }
-        } catch (e) {
-            console.error("Failed to toggle comment like", e);
-        }
+      } catch (e) {
+        console.error("Failed to toggle comment like", e);
+      }
+    };
+
+    const toggleReplyInput = (comment: Comment) => {
+      if (!isLoggedIn.value) {
+        ElMessage.warning("请先登录");
+        return;
+      }
+      comment.showReplyInput = !comment.showReplyInput;
+      if (!comment.showReplyInput) {
+        comment.replyText = '';
+      }
+    };
+
+    const postReply = async (parentComment: Comment) => {
+      if (!parentComment.replyText || !parentComment.replyText.trim()) return;
+      const id = route.params.id;
+      try {
+        await axios.post(`/api/v1/operas/${id}/comments`, {
+          comment_text: parentComment.replyText,
+          parent_comment_id: parentComment.comment_id
+        });
+        parentComment.replyText = '';
+        parentComment.showReplyInput = false;
+        await fetchComments();
+      } catch (e: any) {
+        console.error("Failed to post reply", e);
+        ElMessage.error(e.response?.data?.error || "回复失败");
+      }
     };
 
     const initDPlayer = () => {
       if (!opera.value) {
-          console.warn("initDPlayer: Opera data is missing");
-          return;
+        console.warn("initDPlayer: Opera data is missing");
+        return;
       }
-      
+
       // Double check container availability
       if (!dplayerContainer.value) {
-          console.warn("initDPlayer: Container element not found. Waiting for DOM update...");
-          return;
+        console.warn("initDPlayer: Container element not found. Waiting for DOM update...");
+        return;
       }
 
       try {
-          const options: any = {
-            container: dplayerContainer.value,
-            video: {
-              url: opera.value.video_path,
-              pic: opera.value.avatar,
-            },
-            autoplay: false,
-            theme: '#af000e',
-            lang: 'zh-cn',
-            screenshot: false,
-            hotkey: true,
-            preload: 'auto',
-            volume: 0.5,
-            mutex: false,
+        const options: any = {
+          container: dplayerContainer.value,
+          video: {
+            url: opera.value.video_path,
+            pic: opera.value.avatar,
+          },
+          autoplay: false,
+          theme: '#af000e',
+          lang: 'zh-cn',
+          screenshot: false,
+          hotkey: true,
+          preload: 'auto',
+          volume: 0.5,
+          mutex: false,
+        };
+
+        if (opera.value.srt_path) {
+          options.subtitle = {
+            url: opera.value.srt_path,
+            type: 'webvtt',
+            fontSize: '25px',
+            bottom: '5%',
+            color: '#b7daff',
           };
+        }
 
-          if (opera.value.srt_path) {
-             options.subtitle = {
-                 url: opera.value.srt_path,
-                 type: 'webvtt',
-                 fontSize: '25px',
-                 bottom: '5%',
-                 color: '#b7daff',
-             };
-          }
-
-          dp = new DPlayer(options);
+        dp = new DPlayer(options);
       } catch (e) {
-          console.error("Error initializing DPlayer:", e);
+        console.error("Error initializing DPlayer:", e);
       }
     };
 
@@ -224,9 +309,9 @@ export default defineComponent({
 
     // Watch for route changes to reload video
     watch(() => route.params.id, (newId) => {
-        if (newId) {
-            fetchOpera();
-        }
+      if (newId) {
+        fetchOpera();
+      }
     });
 
     onMounted(() => {
@@ -333,11 +418,15 @@ export default defineComponent({
       onToggleFavorite,
       onShare,
       postComment,
-      deleteComment,
       canDelete,
       toggleEmojiPicker,
       addEmoji,
-      onToggleCommentLike
+      toggleReplyEmojiPicker,
+      addEmojiToReply,
+      onToggleCommentLike,
+      toggleReplyInput,
+      postReply,
+      deleteComment
     };
   }
 });
