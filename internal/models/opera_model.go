@@ -169,21 +169,23 @@ type PresignResponse struct {
 
 // CreateOperaRequest DTO (POST /operas)
 type CreateOperaRequest struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description"`
-	VideoPath   string `json:"video_path" binding:"required"` // 必须是 PresignResponse.ObjectKey
-	AvatarPath  string `json:"avatar_path"`                   // 封面的 ObjectKey
-	ArtistIDs   []uint `json:"artist_ids"`                    // 关联的艺术家ID
+	Title          string   `json:"title" binding:"required"`
+	Description    string   `json:"description"`
+	VideoPath      string   `json:"video_path" binding:"required"` // 必须是 PresignResponse.ObjectKey
+	AvatarPath     string   `json:"avatar_path"`                   // 封面的 ObjectKey
+	ArtistIDs      []uint   `json:"artist_ids"`                    // 关联的艺术家ID
+	NewArtistNames []string `json:"new_artist_names"`              // 新增艺术家名字（自动创建）
 }
 
 // UpdateOperaRequest DTO (PUT /admin/operas/:id)
 type UpdateOperaRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	VideoPath   string `json:"video_path"`
-	AvatarPath  string `json:"avatar_path"`
-	ArtistIDs   []uint `json:"artist_ids"`
-	IsHidden    *bool  `json:"is_hidden"`
+	Title          string   `json:"title"`
+	Description    string   `json:"description"`
+	VideoPath      string   `json:"video_path"`
+	AvatarPath     string   `json:"avatar_path"`
+	ArtistIDs      []uint   `json:"artist_ids"`
+	NewArtistNames []string `json:"new_artist_names"`
+	IsHidden       *bool    `json:"is_hidden"`
 }
 
 // CreateArtistRequest DTO (POST /admin/artists)
@@ -208,4 +210,86 @@ type UpdateUserRoleRequest struct {
 // UpdateStatusRequest DTO (PATCH /admin/operas/:id/status)
 type UpdateStatusRequest struct {
 	Status string `json:"status" binding:"required,oneof=approved rejected"`
+}
+
+// TencentCloudCallbackRequest 腾讯云数据万象任务回调请求
+type TencentCloudCallbackRequest struct {
+	EventName  string      `json:"EventName"`  // 事件名称：TaskFinish
+	JobsDetail []JobDetail `json:"JobsDetail"` // 任务详情列表
+}
+
+// JobDetail 任务详情
+type JobDetail struct {
+	Code         string        `json:"Code"`         // 状态码：Success
+	Message      string        `json:"Message"`      // 状态消息
+	JobId        string        `json:"JobId"`        // 任务ID
+	Tag          string        `json:"Tag"`          // 任务类型：Transcode, SmartCover, SpeechRecognition
+	State        string        `json:"State"`        // 任务状态：Success, Failed
+	CreationTime string        `json:"CreationTime"` // 创建时间
+	StartTime    string        `json:"StartTime"`    // 开始时间
+	EndTime      string        `json:"EndTime"`      // 结束时间
+	QueueId      string        `json:"QueueId"`      // 队列ID
+	Input        JobInput      `json:"Input"`        // 输入信息
+	Operation    JobOperation  `json:"Operation"`    // 操作信息
+	Workflow     WorkflowInfo  `json:"Workflow"`     // 工作流信息
+}
+
+// JobInput 输入信息
+type JobInput struct {
+	BucketId string `json:"BucketId"` // Bucket名称
+	Object   string `json:"Object"`   // 输入文件路径，如：tmp/黄梅戏.mp4
+	Region   string `json:"Region"`   // 地域
+}
+
+// JobOperation 操作信息
+type JobOperation struct {
+	TemplateId   string       `json:"TemplateId"`   // 模板ID
+	TemplateName string       `json:"TemplateName"` // 模板名称
+	Output       OutputConfig `json:"Output"`       // 输出配置
+	MediaResult  *MediaResult `json:"MediaResult"`  // 媒体处理结果
+	MediaInfo    *MediaInfo   `json:"MediaInfo"`    // 媒体信息（转码任务）
+	SpeechRecognitionResult *SpeechResult `json:"SpeechRecognitionResult"` // 语音识别结果
+}
+
+// OutputConfig 输出配置
+type OutputConfig struct {
+	Region string `json:"Region"` // 输出地域
+	Bucket string `json:"Bucket"` // 输出Bucket
+	Object string `json:"Object"` // 输出对象路径模板
+}
+
+// MediaResult 媒体处理结果
+type MediaResult struct {
+	OutputFile OutputFile `json:"OutputFile"` // 输出文件信息
+}
+
+// OutputFile 输出文件信息
+type OutputFile struct {
+	Bucket     string   `json:"Bucket"`     // Bucket名称
+	Region     string   `json:"Region"`     // 地域
+	ObjectName []string `json:"ObjectName"` // 输出文件路径列表
+	ObjectUrl  []string `json:"ObjectUrl"`  // 输出文件URL列表
+}
+
+// MediaInfo 媒体信息
+type MediaInfo struct {
+	Format MediaFormat `json:"Format"` // 格式信息
+}
+
+// MediaFormat 格式信息
+type MediaFormat struct {
+	Duration string `json:"Duration"` // 时长（秒），如："6774.499999"
+}
+
+// SpeechResult 语音识别结果
+type SpeechResult struct {
+	ObjectName string  `json:"ObjectName"` // 字幕文件路径
+	AudioTime  float64 `json:"AudioTime"`  // 音频时长（秒）
+}
+
+// WorkflowInfo 工作流信息
+type WorkflowInfo struct {
+	WorkflowId   string `json:"WorkflowId"`   // 工作流ID
+	WorkflowName string `json:"WorkflowName"` // 工作流名称
+	RunId        string `json:"RunId"`        // 执行ID
 }

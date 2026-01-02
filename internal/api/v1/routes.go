@@ -46,6 +46,12 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			uploads.POST("/presign", HandleRequestUploadURL)
 		}
 
+		// 回调路由 (Callbacks)
+		callbacks := v1.Group("/callback")
+		{
+			callbacks.POST("/transcode", HandleTranscodeCallback)
+		}
+
 		// 作品路由 (Operas)
 		operas := v1.Group("/operas")
 		{

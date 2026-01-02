@@ -67,3 +67,17 @@ func HandleRequestUploadURL(c *gin.Context) {
 		ObjectKey: objectKey,
 	})
 }
+
+// HandleTranscodeCallback (POST /api/v1/callback/transcode)
+// 处理腾讯云数据万象任务完成回调
+func HandleTranscodeCallback(c *gin.Context) {
+	var callback models.TencentCloudCallbackRequest
+	if err := c.ShouldBindJSON(&callback); err != nil {
+		resp.BadRequest(c, "Invalid callback data: "+err.Error())
+		return
+	}
+
+	// 调用服务层处理
+	response, status := services.HandleTranscodeCallback(callback)
+	c.JSON(status, response)
+}

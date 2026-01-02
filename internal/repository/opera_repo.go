@@ -124,3 +124,14 @@ func (r *OperaRepo) GetByIDsInOrder(ids []uint) ([]models.Opera, error) {
 	
 	return orderedOperas, nil
 }
+
+// FindByTitle 根据作品标题查找作品（用于转码回调）
+func (r *OperaRepo) FindByTitle(title string) (*models.Opera, error) {
+	var opera models.Opera
+	err := r.getDB().Preload("Artists").Where("opera_title = ?", title).First(&opera).Error
+	if err != nil {
+		return nil, err
+	}
+	return &opera, nil
+}
+

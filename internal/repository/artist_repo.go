@@ -65,3 +65,13 @@ func (r *ArtistRepo) Exists(id uint) (bool, error) {
 	err := r.getDB().Model(&models.Artist{}).Where("artist_id = ?", id).Count(&count).Error
 	return count > 0, err
 }
+
+// FindByName 根据名字查找艺术家
+func (r *ArtistRepo) FindByName(name string) (*models.Artist, error) {
+	var artist models.Artist
+	err := r.getDB().Where("name = ?", name).First(&artist).Error
+	if err != nil {
+		return nil, err
+	}
+	return &artist, nil
+}

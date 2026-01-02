@@ -71,20 +71,20 @@ func (r *InteractionRepo) GetUserFavoritedOperaIDs(userID uint) ([]uint, error) 
 func (r *InteractionRepo) GetUserHistoryOperaIDs(userID uint, limit, offset int) ([]uint, int64, error) {
 	var operaIDs []uint
 	var total int64
-	
+
 	db := r.getDB().Model(&models.PlayHistory{}).Where("user_id = ?", userID)
-	
+
 	// 统计总数
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	// 获取ID列表
 	err := db.Order("created_at desc").
 		Limit(limit).
 		Offset(offset).
 		Pluck("opera_id", &operaIDs).Error
-	
+
 	return operaIDs, total, err
 }
 
@@ -97,7 +97,7 @@ func (r *InteractionRepo) RecordOrUpdatePlayHistory(userID *uint, operaID uint) 
 
 	var history models.PlayHistory
 	err := r.getDB().Where("user_id = ? AND opera_id = ?", *userID, operaID).First(&history).Error
-	
+
 	if err == nil {
 		// 已存在，更新计数和时间
 		return r.getDB().Model(&history).Updates(map[string]interface{}{
@@ -105,7 +105,7 @@ func (r *InteractionRepo) RecordOrUpdatePlayHistory(userID *uint, operaID uint) 
 			"updated_at": nil, // 使用当前时间
 		}).Error
 	}
-	
+
 	// 不存在，创建新记录
 	history = models.PlayHistory{
 		UserID:  userID,
@@ -278,7 +278,7 @@ func (r *InteractionRepo) BatchCountAll(operaIDs []uint) (likes, favorites, shar
 			COALESCE(f.count, 0) as favs,
 			COALESCE(s.count, 0) as shares,
 			COALESCE(p.count, 0) as plays
-		FROM unnest(?::int[]) AS o(opera_id)
+		FROM (SELECT unnest(?::int[]) AS opera_id) o
 		LEFT JOIN (
 			SELECT opera_id, COUNT(*) as count 
 			FROM likes 
