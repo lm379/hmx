@@ -45,8 +45,18 @@
               <el-breadcrumb-item>{{ $route.name }}</el-breadcrumb-item>
             </el-breadcrumb>
             <div class="user-info">
-              <span>{{ user?.username }}</span>
-              <el-button link @click="logout">退出</el-button>
+              <el-dropdown trigger="click">
+                <div class="avatar-container">
+                  <img :src="user?.icon || `https://ui-avatars.com/api/?name=${user?.username || 'Admin'}&background=random`" class="user-avatar" />
+                  <span class="username">{{ user?.username }}</span>
+                  <el-icon class="el-icon--right"><CaretBottom /></el-icon>
+                </div>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click="logout">退出登录</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
           </div>
         </el-header>

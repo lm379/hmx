@@ -1,5 +1,6 @@
 .admin-layout {
   height: 100vh;
+  width: 100%;
 }
 
 .el-container {
@@ -9,6 +10,7 @@
 .el-aside {
   background-color: #304156;
   color: #fff;
+  overflow-x: hidden;
 }
 
 .logo {
@@ -29,6 +31,12 @@
   border-bottom: 1px solid #dcdfe6;
   display: flex;
   align-items: center;
+  padding: 0 20px;
+}
+
+.el-main {
+  padding: 20px;
+  background-color: #f0f2f5;
 }
 
 .header-content {
@@ -36,4 +44,31 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.avatar-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.avatar-container:hover {
+  background-color: #f5f5f5;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+}
+
+.username {
+  font-size: 14px;
+  color: #333;
+  margin-right: 4px;
 }

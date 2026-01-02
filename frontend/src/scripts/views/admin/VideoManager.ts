@@ -46,10 +46,13 @@ export default defineComponent({
 
     const fetchArtists = async () => {
       try {
-        const res = await axios.get('/api/v1/artists');
+        const res = await axios.get('/api/v1/artists', {
+          params: { page: 1, page_size: 100 }
+        });
         artistOptions.value = res.data.data.list;
       } catch (e) {
         console.error(e);
+        ElMessage.error('获取艺术家列表失败');
       }
     };
 

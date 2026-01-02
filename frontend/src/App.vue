@@ -2,7 +2,7 @@
   <div class="app-container">
     <NavBar v-if="!$route.path.startsWith('/admin')" />
 
-    <main class="main-content">
+    <main :class="{ 'main-content': !$route.path.startsWith('/admin') }">
       <!-- Category/Filter Bar (Global for specific pages) -->
       <div class="category-bar-container" v-if="$route.meta.showCategoryBar">
         <div class="category-bar">
