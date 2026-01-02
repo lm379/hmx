@@ -23,7 +23,7 @@ export default defineComponent({
       description: '',
       video_path: '',
       avatar_path: '',
-      artist_ids: [] as number[],
+      artist_ids: [] as (number | string)[],
       is_hidden: false,
     });
 
@@ -47,7 +47,13 @@ export default defineComponent({
     const fetchArtists = async () => {
       try {
         const res = await axios.get('/api/v1/artists', {
-          params: { page: 1, page_size: 100 }
+          params: { 
+              page: 1, 
+              page_size: 100,
+              // If backend supports filtering by name, add query here. 
+              // Currently backend returns list, frontend filtering might be needed if list is small,
+              // or rely on el-select filtering.
+          }
         });
         artistOptions.value = res.data.data.list;
       } catch (e) {
@@ -176,12 +182,24 @@ export default defineComponent({
           aPath = await uploadFile(avatarFile.value, 'avatar');
         }
 
+        // Separate IDs and new names
+        const artistIDs: number[] = [];
+        const newArtistNames: string[] = [];
+        form.artist_ids.forEach(val => {
+            if (typeof val === 'number') {
+                artistIDs.push(val);
+            } else {
+                newArtistNames.push(val);
+            }
+        });
+
         const data = {
           title: form.title,
           description: form.description,
           video_path: vPath,
           avatar_path: aPath,
-          artist_ids: form.artist_ids,
+          artist_ids: artistIDs,
+          new_artist_names: newArtistNames,
           is_hidden: form.is_hidden
         };
 
@@ -194,6 +212,8 @@ export default defineComponent({
         ElMessage.success(isEdit.value ? '更新成功' : '创建成功');
         dialogVisible.value = false;
         fetchData();
+        // Refresh artist list to include newly created ones
+        fetchArtists();
       } catch (e) {
         console.error(e);
         ElMessage.error('操作失败');

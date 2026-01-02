@@ -96,7 +96,15 @@
              </el-upload>
         </el-form-item>
          <el-form-item label="艺术家">
-            <el-select v-model="form.artist_ids" multiple placeholder="请选择艺术家">
+            <el-select 
+              v-model="form.artist_ids" 
+              multiple 
+              filterable
+              allow-create
+              default-first-option
+              :reserve-keyword="false"
+              placeholder="请选择或输入艺术家名字"
+            >
                 <el-option
                   v-for="item in artistOptions"
                   :key="item.artist_id"
