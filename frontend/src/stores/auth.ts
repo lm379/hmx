@@ -28,6 +28,12 @@ export const useAuthStore = defineStore('auth', () => {
       async (error) => {
         const originalRequest = error.config;
 
+        // 跳过登录、登出、注册等不需要处理 401 的请求
+        const skipUrls = ['/api/v1/auth/login', '/api/v1/auth/logout', '/api/v1/auth/register', '/api/v1/auth/refresh'];
+        if (skipUrls.some(url => originalRequest.url?.includes(url))) {
+          return Promise.reject(error);
+        }
+
         // 如果是 401 错误且不是刷新 token 请求，尝试刷新
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
