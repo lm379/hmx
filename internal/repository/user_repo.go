@@ -145,7 +145,7 @@ func (r *UserRepo) CheckDuplicate(email, phone, username string) (bool, error) {
 func (r *UserRepo) UpdateLoginInfo(id uint, lastLoginAt interface{}, lastLoginIP string) error {
 	return r.getDB().Model(&models.Users{}).Where("user_id = ?", id).Updates(map[string]interface{}{
 		"last_login_at": lastLoginAt,
-		"last_login_ip": lastLoginIP,
+		"last_ip":       lastLoginIP,
 	}).Error
 }
 
