@@ -8,6 +8,11 @@ import ArtistListView from '../views/ArtistListView.vue';
 import PlayView from '../views/PlayView.vue';
 import ArtistProfileView from '../views/ArtistProfileView.vue';
 import NotFound from '../views/NotFound.vue';
+import AdminLayout from '../views/admin/AdminLayout.vue';
+import DashboardView from '../views/admin/DashboardView.vue';
+import VideoManager from '../views/admin/VideoManager.vue';
+import ArtistManager from '../views/admin/ArtistManager.vue';
+import UserManager from '../views/admin/UserManager.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes: Array<RouteRecordRaw> = [
@@ -56,6 +61,37 @@ const routes: Array<RouteRecordRaw> = [
     meta: { showCategoryBar: true }
   },
   {
+    path: '/admin',
+    component: AdminLayout,
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        redirect: '/admin/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: '仪表盘',
+        component: DashboardView
+      },
+      {
+        path: 'videos',
+        name: '视频管理',
+        component: VideoManager
+      },
+      {
+        path: 'artists',
+        name: '艺术家管理',
+        component: ArtistManager
+      },
+      {
+        path: 'users',
+        name: '用户管理',
+        component: UserManager
+      }
+    ]
+  },
+  {
     path: '/404',
     name: 'NotFound',
     component: NotFound
@@ -73,7 +109,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
-  
+
   if (to.meta.requiresAuth) {
     if (!authStore.isLoggedIn) {
       // Try to restore session
@@ -89,6 +125,17 @@ router.beforeEach(async (to, _from, next) => {
       }
     }
   }
+
+  if (to.meta.requiresAdmin) {
+    // Ensure user info is loaded (might be logged in but user object is stale if page refreshed)
+    // Actually checkLoginStatus does this.
+    // Check role
+    if (authStore.user?.role !== 'Administrator') {
+      next({ name: 'Home' });
+      return;
+    }
+  }
+
   next();
 });
 

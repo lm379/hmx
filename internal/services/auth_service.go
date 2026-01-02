@@ -14,6 +14,7 @@ import (
 	"github.com/lm379/hmx/config"
 	"github.com/lm379/hmx/database"
 	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/internal/repository"
 	"github.com/lm379/hmx/pkg/emailutils"
 	"github.com/lm379/hmx/pkg/hashutils"
 	"github.com/lm379/hmx/pkg/jwtutils"
@@ -196,8 +197,12 @@ func RegisterUser(input models.RegisterInput) (gin.H, int) {
 	}
 
 	// 检查用户是否已存在 (Email, Phone, Username)
-	var existingUser models.Users
-	if err := database.DB.Where("email = ? OR phone = ? OR username = ?", input.Email, input.Phone, input.Username).First(&existingUser).Error; err == nil {
+	userRepo := repository.NewUserRepo()
+	exists, err := userRepo.CheckDuplicate(input.Email, input.Phone, input.Username)
+	if err != nil {
+		return gin.H{"error": "Database error"}, http.StatusInternalServerError
+	}
+	if exists {
 		return gin.H{"error": "Email, Phone or Username already registered"}, http.StatusConflict
 	}
 
@@ -217,7 +222,7 @@ func RegisterUser(input models.RegisterInput) (gin.H, int) {
 		Sex:      models.Other, // 默认
 	}
 
-	if err := database.DB.Create(&newUser).Error; err != nil {
+	if err := userRepo.Create(&newUser); err != nil {
 		return gin.H{"error": "Failed to create user"}, http.StatusInternalServerError
 	}
 
@@ -229,10 +234,11 @@ func RegisterUser(input models.RegisterInput) (gin.H, int) {
 
 // LoginUser 登录用户并返回 JWT
 func LoginUser(input models.LoginInput, clientIP string) (gin.H, int) {
-	var user models.Users
-
+	userRepo := repository.NewUserRepo()
+	
 	// 查找用户 (支持 Email 或 Username)
-	if err := database.DB.Where("email = ? OR username = ?", input.Account, input.Account).First(&user).Error; err != nil {
+	user, err := userRepo.GetByEmailOrUsername(input.Account)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return gin.H{"error": "Invalid credentials"}, http.StatusUnauthorized
 		}
@@ -246,10 +252,7 @@ func LoginUser(input models.LoginInput, clientIP string) (gin.H, int) {
 
 	// 更新最后登录时间和 IP
 	now := time.Now()
-	database.DB.Model(&user).Updates(map[string]interface{}{
-		"last_login_at": now,
-		"last_ip":       clientIP,
-	})
+	userRepo.UpdateLoginInfo(user.UserID, now, clientIP)
 
 	// 生成 Access Token 和 Refresh Token
 	accessToken, err := jwtutils.GenerateAccessToken(user.UserID, user.Username, string(user.Role))
@@ -289,8 +292,9 @@ func ForgetPassword(input models.ForgetPasswordInput) (gin.H, int) {
 	}
 
 	// 查找用户
-	var user models.Users
-	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+	userRepo := repository.NewUserRepo()
+	user, err := userRepo.GetByEmail(input.Email)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return gin.H{"error": "User not found"}, http.StatusNotFound
 		}
@@ -304,7 +308,7 @@ func ForgetPassword(input models.ForgetPasswordInput) (gin.H, int) {
 	}
 
 	// 更新密码
-	if err := database.DB.Model(&user).Update("password", hashedPassword).Error; err != nil {
+	if err := userRepo.UpdatePassword(user.UserID, hashedPassword); err != nil {
 		return gin.H{"error": "Failed to update password"}, http.StatusInternalServerError
 	}
 

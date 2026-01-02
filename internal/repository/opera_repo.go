@@ -1,0 +1,126 @@
+package repository
+
+import (
+	"github.com/lm379/hmx/database"
+	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/pkg/pagination"
+	"gorm.io/gorm"
+)
+
+// OperaRepo 作品相关的数据库操作
+type OperaRepo struct{}
+
+// NewOperaRepo 创建作品仓库实例
+func NewOperaRepo() *OperaRepo {
+	return &OperaRepo{}
+}
+
+// getDB 获取数据库实例
+func (r *OperaRepo) getDB() *gorm.DB {
+	return database.DB
+}
+
+// GetAll 获取所有作品 (带分页和过滤)
+func (r *OperaRepo) GetAll(pagination *pagination.Pagination, includeHidden bool) ([]models.Opera, int64, error) {
+	var operas []models.Opera
+	var total int64
+	db := r.getDB().Model(&models.Opera{})
+
+	if !includeHidden {
+		db = db.Where("is_hidden = ?", false)
+	}
+
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := db.Scopes(pagination.Paginate()).
+		Preload("Artists").
+		Order("created_at desc").
+		Find(&operas).Error
+
+	return operas, total, err
+}
+
+// GetByID 根据ID获取作品
+func (r *OperaRepo) GetByID(id uint) (*models.Opera, error) {
+	var opera models.Opera
+	err := r.getDB().Preload("Artists").First(&opera, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &opera, nil
+}
+
+// Create 创建作品
+func (r *OperaRepo) Create(opera *models.Opera) error {
+	return r.getDB().Create(opera).Error
+}
+
+// Update 更新作品基本信息
+func (r *OperaRepo) Update(id uint, updates map[string]interface{}) error {
+	return r.getDB().Model(&models.Opera{}).Where("opera_id = ?", id).Updates(updates).Error
+}
+
+// UpdateArtists 更新作品的艺术家关联
+func (r *OperaRepo) UpdateArtists(opera *models.Opera, artists []*models.Artist) error {
+	return r.getDB().Model(opera).Association("Artists").Replace(artists)
+}
+
+// Delete 删除作品
+func (r *OperaRepo) Delete(id uint) error {
+	return r.getDB().Delete(&models.Opera{}, id).Error
+}
+
+// Exists 检查作品是否存在
+func (r *OperaRepo) Exists(id uint) (bool, error) {
+	var count int64
+	err := r.getDB().Model(&models.Opera{}).Where("opera_id = ?", id).Count(&count).Error
+	return count > 0, err
+}
+
+// FindArtistsByIDs 根据ID列表查找艺术家
+func (r *OperaRepo) FindArtistsByIDs(ids []uint) ([]*models.Artist, error) {
+	var artists []*models.Artist
+	err := r.getDB().Find(&artists, ids).Error
+	return artists, err
+}
+
+// GetByIDs 根据ID列表获取作品（带分页）
+func (r *OperaRepo) GetByIDs(ids []uint, pagination *pagination.Pagination) ([]models.Opera, int64, error) {
+	var operas []models.Opera
+	var total int64
+	
+	db := r.getDB().Model(&models.Opera{}).Where("opera_id IN ?", ids)
+	
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	err := db.Scopes(pagination.Paginate()).Preload("Artists").Find(&operas).Error
+	return operas, total, err
+}
+
+// GetByIDsInOrder 根据ID列表获取作品（保持顺序）
+func (r *OperaRepo) GetByIDsInOrder(ids []uint) ([]models.Opera, error) {
+	var operas []models.Opera
+	err := r.getDB().Preload("Artists").Where("opera_id IN ?", ids).Find(&operas).Error
+	if err != nil {
+		return nil, err
+	}
+	
+	// 按照输入的ID顺序排序
+	operaMap := make(map[uint]models.Opera)
+	for _, op := range operas {
+		operaMap[op.OperaID] = op
+	}
+	
+	orderedOperas := make([]models.Opera, 0, len(ids))
+	for _, id := range ids {
+		if op, ok := operaMap[id]; ok {
+			orderedOperas = append(orderedOperas, op)
+		}
+	}
+	
+	return orderedOperas, nil
+}

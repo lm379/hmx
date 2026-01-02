@@ -4,8 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/lm379/hmx/database"
-	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/internal/repository"
 )
 
 // TriggerAISummary 异步触发 AI 总结 (模拟)
@@ -20,14 +19,15 @@ func TriggerAISummary(operaID uint) {
 	mockSummary := "这是一段由 AI 模拟生成的黄梅戏摘要。这段摘要详细分析了...（此处为模拟内容）"
 
 	// 将结果写回数据库
-	db := database.DB
-	var opera models.Opera
-	if err := db.First(&opera, operaID).Error; err != nil {
+	operaRepo := repository.NewOperaRepo()
+	opera, err := operaRepo.GetByID(operaID)
+	if err != nil {
 		log.Printf("[AI Service] 错误: 找不到 Opera ID %d: %v", operaID, err)
 		return
 	}
 
-	if err := db.Model(&opera).Update("ai_summary", mockSummary).Error; err != nil {
+	updates := map[string]interface{}{"ai_summary": mockSummary}
+	if err := operaRepo.Update(opera.OperaID, updates); err != nil {
 		log.Printf("[AI Service] 错误: 更新 Opera ID %d 摘要失败: %v", operaID, err)
 		return
 	}

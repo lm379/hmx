@@ -10,8 +10,8 @@ export default defineComponent({
     const authStore = useAuthStore();
     const { isLoggedIn, user } = storeToRefs(authStore);
 
-    const handleLogout = () => {
-      authStore.logout();
+    const handleLogout = async () => {
+      await authStore.logout();
       router.push('/login');
     };
 
@@ -33,6 +33,10 @@ export default defineComponent({
       router.push('/profile');
     };
 
+    const goAdmin = () => {
+      router.push('/admin');
+    };
+
     onMounted(() => {
       authStore.checkLoginStatus();
     });
@@ -43,6 +47,7 @@ export default defineComponent({
       goHome,
       goLogin,
       goProfile,
+      goAdmin,
       handleLogout
     };
   }

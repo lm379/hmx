@@ -3,150 +3,97 @@ package services
 import (
 	"errors"
 	"net/http"
-	"time"
 
-	"github.com/lm379/hmx/database"
 	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/internal/repository"
 	"github.com/lm379/hmx/pkg/hashutils"
 	"github.com/lm379/hmx/pkg/pagination"
 	"github.com/lm379/hmx/pkg/validator"
-	"gorm.io/gorm"
 )
 
 // GetUserLikes 获取用户点赞的视频列表
 func GetUserLikes(userID uint, pagination *pagination.Pagination) ([]models.Opera, int64, error) {
-	var operas []models.Opera
-	var total int64
-	db := database.DB
+	interactionRepo := repository.NewInteractionRepo()
+	operaRepo := repository.NewOperaRepo()
 
-	var likedOperaIDs []uint
-	db.Model(&models.Like{}).Where("user_id = ?", userID).Pluck("opera_id", &likedOperaIDs)
-
-	if len(likedOperaIDs) == 0 {
-		return operas, 0, nil
+	likedOperaIDs, err := interactionRepo.GetUserLikedOperaIDs(userID)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	operaDB := db.Model(&models.Opera{}).Where("opera_id IN ?", likedOperaIDs)
-	operaDB.Count(&total)
+	if len(likedOperaIDs) == 0 {
+		return []models.Opera{}, 0, nil
+	}
 
-	err := operaDB.Scopes(pagination.Paginate()).Preload("Artists").Find(&operas).Error
+	// 使用 opera repo 获取作品列表
+	operas, total, err := operaRepo.GetByIDs(likedOperaIDs, pagination)
 	return operas, total, err
 }
 
 // GetUserFavorites 获取用户收藏的视频列表
 func GetUserFavorites(userID uint, pagination *pagination.Pagination) ([]models.Opera, int64, error) {
-	var operas []models.Opera
-	var total int64
-	db := database.DB
+	interactionRepo := repository.NewInteractionRepo()
+	operaRepo := repository.NewOperaRepo()
 
-	var favOperaIDs []uint
-	db.Model(&models.Favorite{}).Where("user_id = ?", userID).Pluck("opera_id", &favOperaIDs)
-
-	if len(favOperaIDs) == 0 {
-		return operas, 0, nil
+	favOperaIDs, err := interactionRepo.GetUserFavoritedOperaIDs(userID)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	operaDB := db.Model(&models.Opera{}).Where("opera_id IN ?", favOperaIDs)
-	operaDB.Count(&total)
-	err := operaDB.Scopes(pagination.Paginate()).Preload("Artists").Find(&operas).Error
+	if len(favOperaIDs) == 0 {
+		return []models.Opera{}, 0, nil
+	}
 
+	// 使用 opera repo 获取作品列表
+	operas, total, err := operaRepo.GetByIDs(favOperaIDs, pagination)
 	return operas, total, err
 }
 
 // GetUserHistory 获取用户观看历史
 func GetUserHistory(userID uint, pagination *pagination.Pagination) ([]models.Opera, int64, error) {
-	var operas []models.Opera
-	var total int64
-	db := database.DB
+	interactionRepo := repository.NewInteractionRepo()
+	operaRepo := repository.NewOperaRepo()
 
-	// 直接查询 PlayHistory 表并关联 Opera
-	// 由于 RecordPlayHistory 已经做了去重，这里直接分页查询即可
-	historyDB := db.Table("play_history").
-		Select("opera.*").
-		Joins("join opera on opera.opera_id = play_history.opera_id").
-		Where("play_history.user_id = ?", userID).
-		Order("play_history.created_at desc")
-
-	// 统计总数
-	historyDB.Count(&total)
-
-	// 分页并加载关联的 Artists
-	err := historyDB.Scopes(pagination.Paginate()).
-		Preload("Artists").
-		Find(&operas).Error
-
-	// 如果 Preload 失败（因为使用了 Table("play_history")），可以改回使用模型查询
+	// 获取观看历史的作品ID列表
+	offset := (pagination.Page - 1) * pagination.PageSize
+	operaIDs, total, err := interactionRepo.GetUserHistoryOperaIDs(userID, pagination.PageSize, offset)
 	if err != nil {
-		// 回退方案：先查 ID，再查模型
-		var operaIDs []uint
-		db.Model(&models.PlayHistory{}).
-			Where("user_id = ?", userID).
-			Order("created_at desc").
-			Scopes(pagination.Paginate()).
-			Pluck("opera_id", &operaIDs)
-
-		if len(operaIDs) == 0 {
-			return []models.Opera{}, total, nil
-		}
-
-		err = db.Preload("Artists").Where("opera_id IN ?", operaIDs).Find(&operas).Error
-		// 再次手动排序
-		operaMap := make(map[uint]models.Opera)
-		for _, op := range operas {
-			operaMap[op.OperaID] = op
-		}
-
-		operas = make([]models.Opera, 0, len(operaIDs))
-		for _, id := range operaIDs {
-			if op, ok := operaMap[id]; ok {
-				operas = append(operas, op)
-			}
-		}
+		return nil, 0, err
 	}
 
+	if len(operaIDs) == 0 {
+		return []models.Opera{}, 0, nil
+	}
+
+	// 根据ID列表获取作品，保持顺序
+	operas, err := operaRepo.GetByIDsInOrder(operaIDs)
 	return operas, total, err
 }
 
 // RecordPlayHistory 记录播放历史
 func RecordPlayHistory(userID *uint, operaID uint) error {
-	db := database.DB
+	operaRepo := repository.NewOperaRepo()
+	interactionRepo := repository.NewInteractionRepo()
 
 	// 检查作品是否存在
-	var opera models.Opera
-	if err := db.First(&opera, operaID).Error; err != nil {
+	exists, err := operaRepo.Exists(operaID)
+	if err != nil {
 		return err
 	}
-
-	// 如果是登录用户，尝试更新已存在的记录（去重，只保留最新）
-	if userID != nil {
-		var existing models.PlayHistory
-		err := db.Where("user_id = ? AND opera_id = ?", *userID, operaID).First(&existing).Error
-		if err == nil {
-			// 找到了 -> 增加播放次数并更新时间到当前
-			return db.Model(&existing).Updates(map[string]interface{}{
-				"count":      existing.Count + 1,
-				"created_at": time.Now(),
-			}).Error
-		} else if err != gorm.ErrRecordNotFound {
-			return err
-		}
+	if !exists {
+		return errors.New("opera not found")
 	}
 
-	// 没找到或为游客 -> 创建新记录
-	history := models.PlayHistory{
-		UserID:  userID,
-		OperaID: operaID,
-		Count:   1, // 初始播放次数为 1
-	}
-
-	return db.Create(&history).Error
+	// 记录播放历史
+	return interactionRepo.RecordOrUpdatePlayHistory(userID, operaID)
 }
 
 // UpdateUserProfile 更新用户资料
 func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error {
-	db := database.DB
-	var user models.Users
-	if err := db.First(&user, userID).Error; err != nil {
+	userRepo := repository.NewUserRepo()
+	
+	user, err := userRepo.GetByID(userID)
+	if err != nil {
 		return errors.New("user not found")
 	}
 
@@ -154,9 +101,11 @@ func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error
 
 	// Username
 	if input.Username != "" && input.Username != user.Username {
-		var count int64
-		db.Model(&models.Users{}).Where("username = ?", input.Username).Count(&count)
-		if count > 0 {
+		exists, err := userRepo.UsernameExists(input.Username)
+		if err != nil {
+			return err
+		}
+		if exists {
 			return &ServiceError{Code: http.StatusConflict, Message: "Username already taken"}
 		}
 		updates["username"] = input.Username
@@ -167,9 +116,11 @@ func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error
 		if !validator.ValidatePhone(input.Phone) {
 			return &ServiceError{Code: http.StatusBadRequest, Message: "Invalid phone number format"}
 		}
-		var count int64
-		db.Model(&models.Users{}).Where("phone = ?", input.Phone).Count(&count)
-		if count > 0 {
+		exists, err := userRepo.PhoneExists(input.Phone)
+		if err != nil {
+			return err
+		}
+		if exists {
 			return &ServiceError{Code: http.StatusConflict, Message: "Phone number already in use"}
 		}
 		updates["phone"] = input.Phone
@@ -191,9 +142,11 @@ func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error
 			return &ServiceError{Code: http.StatusBadRequest, Message: "Invalid email format"}
 		}
 		// Check uniqueness
-		var count int64
-		db.Model(&models.Users{}).Where("email = ?", input.Email).Count(&count)
-		if count > 0 {
+		exists, err := userRepo.EmailExists(input.Email)
+		if err != nil {
+			return err
+		}
+		if exists {
 			return &ServiceError{Code: http.StatusConflict, Message: "Email already in use"}
 		}
 
@@ -211,14 +164,15 @@ func UpdateUserProfile(userID uint, input models.UpdateUserProfileRequest) error
 		return nil
 	}
 
-	return db.Model(&user).Updates(updates).Error
+	return userRepo.Update(userID, updates)
 }
 
 // UpdatePassword 更新密码
 func UpdatePassword(userID uint, input models.UpdatePasswordRequest) error {
-	db := database.DB
-	var user models.Users
-	if err := db.First(&user, userID).Error; err != nil {
+	userRepo := repository.NewUserRepo()
+	
+	user, err := userRepo.GetByID(userID)
+	if err != nil {
 		return errors.New("user not found")
 	}
 
@@ -232,5 +186,23 @@ func UpdatePassword(userID uint, input models.UpdatePasswordRequest) error {
 		return err
 	}
 
-	return db.Model(&user).Update("password", hashedPassword).Error
+	return userRepo.UpdatePassword(userID, hashedPassword)
+}
+
+// GetUserByID 根据ID获取用户
+func GetUserByID(userID uint) (*models.Users, error) {
+	userRepo := repository.NewUserRepo()
+	return userRepo.GetByID(userID)
+}
+
+// GetAllUsers 获取所有用户 (Admin)
+func GetAllUsers(pagination *pagination.Pagination) ([]models.Users, int64, error) {
+	userRepo := repository.NewUserRepo()
+	return userRepo.GetAll(pagination)
+}
+
+// UpdateUserRole 更新用户角色
+func UpdateUserRole(userID uint, role models.UserRole) error {
+	userRepo := repository.NewUserRepo()
+	return userRepo.UpdateRole(userID, string(role))
 }

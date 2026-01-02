@@ -53,6 +53,68 @@ func (r *InteractionRepo) CountLikes(operaID uint) int64 {
 	return count
 }
 
+// GetUserLikedOperaIDs 获取用户点赞的作品ID列表
+func (r *InteractionRepo) GetUserLikedOperaIDs(userID uint) ([]uint, error) {
+	var operaIDs []uint
+	err := r.getDB().Model(&models.Like{}).Where("user_id = ?", userID).Pluck("opera_id", &operaIDs).Error
+	return operaIDs, err
+}
+
+// GetUserFavoritedOperaIDs 获取用户收藏的作品ID列表
+func (r *InteractionRepo) GetUserFavoritedOperaIDs(userID uint) ([]uint, error) {
+	var operaIDs []uint
+	err := r.getDB().Model(&models.Favorite{}).Where("user_id = ?", userID).Pluck("opera_id", &operaIDs).Error
+	return operaIDs, err
+}
+
+// GetUserHistoryOperaIDs 获取用户观看历史的作品ID列表（按时间倒序）
+func (r *InteractionRepo) GetUserHistoryOperaIDs(userID uint, limit, offset int) ([]uint, int64, error) {
+	var operaIDs []uint
+	var total int64
+	
+	db := r.getDB().Model(&models.PlayHistory{}).Where("user_id = ?", userID)
+	
+	// 统计总数
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// 获取ID列表
+	err := db.Order("created_at desc").
+		Limit(limit).
+		Offset(offset).
+		Pluck("opera_id", &operaIDs).Error
+	
+	return operaIDs, total, err
+}
+
+// RecordOrUpdatePlayHistory 记录或更新播放历史
+func (r *InteractionRepo) RecordOrUpdatePlayHistory(userID *uint, operaID uint) error {
+	if userID == nil {
+		// 匿名用户不记录
+		return nil
+	}
+
+	var history models.PlayHistory
+	err := r.getDB().Where("user_id = ? AND opera_id = ?", *userID, operaID).First(&history).Error
+	
+	if err == nil {
+		// 已存在，更新计数和时间
+		return r.getDB().Model(&history).Updates(map[string]interface{}{
+			"count":      history.Count + 1,
+			"updated_at": nil, // 使用当前时间
+		}).Error
+	}
+	
+	// 不存在，创建新记录
+	history = models.PlayHistory{
+		UserID:  userID,
+		OperaID: operaID,
+		Count:   1,
+	}
+	return r.getDB().Create(&history).Error
+}
+
 // BatchCountLikes 批量统计多个作品的点赞数
 func (r *InteractionRepo) BatchCountLikes(operaIDs []uint) map[uint]int64 {
 	if len(operaIDs) == 0 {

@@ -41,7 +41,7 @@ func HandleCreateOpera(c *gin.Context) {
 func HandleGetOperas(c *gin.Context) {
 	pagination := pagination.GetPagination(c)
 
-	operas, total, err := services.GetAllOperas(pagination)
+	operas, total, err := services.GetOperas(pagination, false)
 	if err != nil {
 		resp.InternalServerError(c, "Failed to fetch operas")
 		return

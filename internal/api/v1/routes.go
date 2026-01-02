@@ -80,7 +80,17 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 		admin.Use(middleware.AuthMiddleware())
 		admin.Use(middleware.AdminMiddleware())
 		{
+			admin.GET("/stats", HandleAdminGetDashboardStats)
+
+			admin.GET("/operas", HandleAdminGetOperas)
+			admin.PUT("/operas/:id", HandleAdminUpdateOpera)
 			admin.DELETE("/operas/:id", HandleDeleteOpera)
+			admin.GET("/artists", HandleGetArtists)
+			admin.POST("/artists", HandleAdminCreateArtist)
+			admin.PUT("/artists/:id", HandleAdminUpdateArtist)
+			admin.DELETE("/artists/:id", HandleAdminDeleteArtist)
+			admin.GET("/users", HandleAdminGetUsers)
+			admin.PUT("/users/:id/role", HandleAdminUpdateUserRole)
 		}
 	}
 

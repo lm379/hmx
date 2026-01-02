@@ -33,6 +33,7 @@ type Opera struct {
 	Description string         `gorm:"column:description;type:text"`
 	Avatar      sql.NullString `gorm:"column:avatar;type:varchar(255)"`
 	AiSummary   string         `gorm:"column:ai_summary;type:text"`
+	IsHidden    bool           `gorm:"column:is_hidden;default:false;not null"`
 	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP"`
 	Artists     []*Artist      `gorm:"many2many:opera_artists;joinForeignKey:opera_id;joinReferences:artist_id"`
@@ -56,6 +57,7 @@ type OperaResponse struct {
 	Description string    `json:"description"`
 	Avatar      *string   `json:"avatar"` // 完整 URL
 	AiSummary   string    `json:"ai_summary"`
+	IsHidden    bool      `json:"is_hidden"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	LikeCount     int64    `json:"like_count"`
@@ -97,6 +99,35 @@ type CreateOperaRequest struct {
 	VideoPath   string `json:"video_path" binding:"required"` // 必须是 PresignResponse.ObjectKey
 	AvatarPath  string `json:"avatar_path"`                   // 封面的 ObjectKey
 	ArtistIDs   []uint `json:"artist_ids"`                    // 关联的艺术家ID
+}
+
+// UpdateOperaRequest DTO (PUT /admin/operas/:id)
+type UpdateOperaRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	VideoPath   string `json:"video_path"`
+	AvatarPath  string `json:"avatar_path"`
+	ArtistIDs   []uint `json:"artist_ids"`
+	IsHidden    *bool  `json:"is_hidden"`
+}
+
+// CreateArtistRequest DTO (POST /admin/artists)
+type CreateArtistRequest struct {
+	Name string `json:"name" binding:"required"`
+	Bio  string `json:"bio"`
+	Avatar string `json:"avatar"`
+}
+
+// UpdateArtistRequest DTO (PUT /admin/artists/:id)
+type UpdateArtistRequest struct {
+	Name string `json:"name"`
+	Bio  string `json:"bio"`
+	Avatar string `json:"avatar"`
+}
+
+// UpdateUserRoleRequest DTO (PUT /admin/users/:id/role)
+type UpdateUserRoleRequest struct {
+	Role UserRole `json:"role" binding:"required,oneof=Administrator User"`
 }
 
 // UpdateStatusRequest DTO (PATCH /admin/operas/:id/status)

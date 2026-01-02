@@ -13,6 +13,7 @@ func ToOperaResponse(opera models.Opera) *models.OperaResponse {
 		VideoPath:   urlutils.GetFullURL(opera.VideoPath),
 		Description: opera.Description,
 		AiSummary:   opera.AiSummary,
+		IsHidden:    opera.IsHidden,
 		CreatedAt:   opera.CreatedAt,
 		UpdatedAt:   opera.UpdatedAt,
 	}

@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lm379/hmx/database"
 	"github.com/lm379/hmx/internal/models"
 	"github.com/lm379/hmx/internal/services"
 	"github.com/lm379/hmx/pkg/converter"
@@ -20,14 +19,14 @@ func HandleGetMe(c *gin.Context) {
 		return
 	}
 
-	var user models.Users
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	user, err := services.GetUserByID(userID.(uint))
+	if err != nil {
 		resp.NotFound(c, "User not found")
 		return
 	}
 
 	// 转换为响应格式，自动处理 URL
-	userResponse := converter.ToUserResponse(&user)
+	userResponse := converter.ToUserResponse(user)
 	resp.Success(c, userResponse)
 }
 
@@ -172,8 +171,8 @@ func HandleSendCodeToCurrentUser(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
 	// Fetch current user email
-	var user models.Users
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	user, err := services.GetUserByID(userID)
+	if err != nil {
 		resp.InternalServerError(c, "Failed to fetch user info")
 		return
 	}
