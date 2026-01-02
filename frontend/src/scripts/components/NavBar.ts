@@ -33,6 +33,14 @@ export default defineComponent({
       router.push('/profile');
     };
 
+    const goCollection = () => {
+      router.push({ path: '/profile', query: { tab: 'favorites' } });
+    };
+
+    const goHistory = () => {
+      router.push({ path: '/profile', query: { tab: 'history' } });
+    };
+
     const goAdmin = () => {
       router.push('/admin');
     };
@@ -47,6 +55,8 @@ export default defineComponent({
       goHome,
       goLogin,
       goProfile,
+      goCollection,
+      goHistory,
       goAdmin,
       handleLogout
     };

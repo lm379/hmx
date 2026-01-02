@@ -1,10 +1,11 @@
 import { defineComponent, ref, onMounted, watch, reactive } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 import VideoCard from '../../components/VideoCard.vue';
 import Pagination from '../../components/Pagination.vue';
 import { useAuthStore } from '../../stores/auth';
-import type { Opera, UpdateUserProfileRequest } from '../../types';
+import type { OperaListItem, UpdateUserProfileRequest } from '../../types';
 import { validateEmail, validatePhone } from '../../utils/validators';
 
 export default defineComponent({
@@ -14,11 +15,12 @@ export default defineComponent({
     Pagination
   },
   setup() {
+    const route = useRoute();
     const authStore = useAuthStore();
     const { user } = storeToRefs(authStore);
     const loadingUser = ref(true);
     const activeTab = ref('history');
-    const list = ref<Opera[]>([]);
+    const list = ref<OperaListItem[]>([]);
     const loading = ref(false);
     
     const currentPage = ref(1);
@@ -51,6 +53,11 @@ export default defineComponent({
         loadingUser.value = true;
         await authStore.checkLoginStatus();
         if (user.value) {
+          // Check query for tab
+          const tab = route.query.tab as string;
+          if (tab && ['history', 'likes', 'favorites'].includes(tab)) {
+            activeTab.value = tab;
+          }
           fetchTabData();
         }
       } catch (error) {
@@ -101,6 +108,13 @@ export default defineComponent({
     watch(activeTab, () => {
       currentPage.value = 1;
       fetchTabData();
+    });
+
+    // Watch for route query changes (e.g. when clicking collection/history in nav while already on profile)
+    watch(() => route.query.tab, (newTab) => {
+      if (newTab && ['history', 'likes', 'favorites'].includes(newTab as string)) {
+        activeTab.value = newTab as string;
+      }
     });
 
     onMounted(() => {

@@ -1,7 +1,39 @@
-export interface Opera {
+// 简化的艺术家信息（用于作品列表）
+export interface SimpleArtist {
+    artist_id: number;
+    name: string;
+    avatar?: string;
+}
+
+// 简化的作品信息（用于艺术家详情，不包含艺术家避免冗余）
+export interface SimpleOpera {
     opera_id: number;
     opera_title: string;
-    artists: { Name: string }[];
+    avatar?: string;
+    duration?: string;
+    play_count: number;
+    like_count: number;
+    created_at: string;
+}
+
+// 列表页的作品信息（简化版）
+export interface OperaListItem {
+    opera_id: number;
+    opera_title: string;
+    artists: SimpleArtist[];
+    avatar?: string;
+    duration?: string;
+    is_hidden: boolean;
+    play_count: number;
+    like_count: number;
+    created_at: string;
+}
+
+// 详情页的作品信息（完整版）
+export interface OperaDetail {
+    opera_id: number;
+    opera_title: string;
+    artists: SimpleArtist[];
     release_date?: string;
     duration?: string;
     music_path?: string;
@@ -9,19 +41,44 @@ export interface Opera {
     srt_path?: string;
     description: string;
     avatar?: string;
-    ai_summary: string;
+    ai_summary?: string;
+    is_hidden: boolean;
+    created_at: string;
+    updated_at: string;
+    like_count: number;
+    favorite_count: number;
+    share_count: number;
+    play_count: number;
+    liked: boolean;
+    favorited: boolean;
+}
+
+// 通用作品类型（向后兼容）
+export interface Opera {
+    opera_id: number;
+    opera_title: string;
+    artists: SimpleArtist[];
+    release_date?: string;
+    duration?: string;
+    music_path?: string;
+    video_path: string;
+    srt_path?: string;
+    description: string;
+    avatar?: string;
+    ai_summary?: string;
+    is_hidden?: boolean;
     created_at: string;
     updated_at: string;
     like_count?: number;
     favorite_count?: number;
     share_count?: number;
+    play_count?: number;
     liked?: boolean;
     favorited?: boolean;
-    play_count?: number;
 }
 
 export interface OperaListResponse {
-    list: Opera[];
+    list: OperaListItem[];
     pagination: {
         total: number;
         page: number;
@@ -29,18 +86,39 @@ export interface OperaListResponse {
     }
 }
 
+// 列表页的艺术家信息（简化版）
+export interface ArtistListItem {
+    artist_id: number;
+    name: string;
+    avatar?: string;
+    bio?: string;
+    created_at: string;
+}
+
+// 详情页的艺术家信息（完整版）
+export interface ArtistDetail {
+    artist_id: number;
+    name: string;
+    bio: string;
+    avatar?: string;
+    operas: SimpleOpera[];
+    created_at: string;
+    updated_at: string;
+}
+
+// 通用艺术家类型（向后兼容）
 export interface Artist {
     artist_id: number;
     name: string;
     bio: string;
     avatar?: string;
-    operas?: Opera[];
+    operas?: SimpleOpera[];
     created_at: string;
     updated_at: string;
 }
 
 export interface ArtistListResponse {
-    list: Artist[];
+    list: ArtistListItem[];
     pagination: {
         total: number;
         page: number;

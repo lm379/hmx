@@ -41,8 +41,21 @@ func HandleGetUserLikes(c *gin.Context) {
 		return
 	}
 
-	// 转换为响应格式，自动处理 URL
-	operaResponses := converter.ToOperaResponseList(operas)
+	// 使用列表响应（简化版）
+	operaResponses := converter.ToOperaListResponseList(operas)
+
+	// 添加计数
+	if len(operaResponses) > 0 {
+		operaIDs := make([]uint, len(operaResponses))
+		for i, r := range operaResponses {
+			operaIDs[i] = r.OperaID
+		}
+		likes, _, _, plays := services.BatchGetCounts(operaIDs)
+		for _, r := range operaResponses {
+			r.LikeCount = likes[r.OperaID]
+			r.PlayCount = plays[r.OperaID]
+		}
+	}
 
 	resp.Success(c, gin.H{
 		"list": operaResponses,
@@ -65,8 +78,21 @@ func HandleGetUserFavorites(c *gin.Context) {
 		return
 	}
 
-	// 转换为响应格式，自动处理 URL
-	operaResponses := converter.ToOperaResponseList(operas)
+	// 使用列表响应
+	operaResponses := converter.ToOperaListResponseList(operas)
+
+	// 添加计数
+	if len(operaResponses) > 0 {
+		operaIDs := make([]uint, len(operaResponses))
+		for i, r := range operaResponses {
+			operaIDs[i] = r.OperaID
+		}
+		likes, _, _, plays := services.BatchGetCounts(operaIDs)
+		for _, r := range operaResponses {
+			r.LikeCount = likes[r.OperaID]
+			r.PlayCount = plays[r.OperaID]
+		}
+	}
 
 	resp.Success(c, gin.H{
 		"list": operaResponses,
@@ -89,7 +115,21 @@ func HandleGetUserHistory(c *gin.Context) {
 		return
 	}
 
-	operaResponses := converter.ToOperaResponseList(operas)
+	// 使用列表响应
+	operaResponses := converter.ToOperaListResponseList(operas)
+
+	// 添加计数
+	if len(operaResponses) > 0 {
+		operaIDs := make([]uint, len(operaResponses))
+		for i, r := range operaResponses {
+			operaIDs[i] = r.OperaID
+		}
+		likes, _, _, plays := services.BatchGetCounts(operaIDs)
+		for _, r := range operaResponses {
+			r.LikeCount = likes[r.OperaID]
+			r.PlayCount = plays[r.OperaID]
+		}
+	}
 
 	resp.Success(c, gin.H{
 		"list": operaResponses,

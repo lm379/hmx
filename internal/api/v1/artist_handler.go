@@ -21,7 +21,8 @@ func HandleGetArtists(c *gin.Context) {
 		return
 	}
 
-	artistResponses := converter.ToArtistResponseList(artists)
+	// 使用列表响应（不包含作品列表）
+	artistResponses := converter.ToArtistListResponseList(artists)
 
 	resp.Success(c, gin.H{
 		"list": artistResponses,
@@ -52,6 +53,19 @@ func HandleGetArtistByID(c *gin.Context) {
 		return
 	}
 
-	artistResponse := converter.ToArtistResponse(artist)
+	// 使用详情响应（包含简化的作品列表）
+	artistResponse := converter.ToArtistDetailResponse(artist)
+	// 为每个作品添加统计数据
+	if len(artistResponse.Operas) > 0 {
+		operaIDs := make([]uint, len(artistResponse.Operas))
+		for i, op := range artistResponse.Operas {
+			operaIDs[i] = op.OperaID
+		}
+		likes, _, _, plays := services.BatchGetCounts(operaIDs)
+		for i := range artistResponse.Operas {
+			artistResponse.Operas[i].PlayCount = plays[artistResponse.Operas[i].OperaID]
+			artistResponse.Operas[i].LikeCount = likes[artistResponse.Operas[i].OperaID]
+		}
+	}
 	resp.Success(c, artistResponse)
 }

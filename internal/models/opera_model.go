@@ -44,31 +44,106 @@ func (Opera) TableName() string {
 	return "opera"
 }
 
-// OperaResponse 用于 API 返回的 DTO，自动处理 URL 拼接
-type OperaResponse struct {
-	OperaID     uint      `json:"opera_id"`
-	OperaTitle  string    `json:"opera_title"`
-	Artists     []Artist  `json:"artists"`
-	ReleaseDate *string   `json:"release_date"`
-	Duration    *string   `json:"duration"`
-	MusicPath   *string   `json:"music_path"` // 完整 URL
-	VideoPath   string    `json:"video_path"` // 完整 URL
-	SrtPath     *string   `json:"srt_path"`   // 字幕 URL
-	Description string    `json:"description"`
-	Avatar      *string   `json:"avatar"` // 完整 URL
-	AiSummary   string    `json:"ai_summary"`
-	IsHidden    bool      `json:"is_hidden"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	LikeCount     int64    `json:"like_count"`
-	FavoriteCount int64    `json:"favorite_count"`
-	ShareCount    int64    `json:"share_count"`
-	PlayCount     int64    `json:"play_count"`
-	Liked         bool     `json:"liked"`
-	Favorited     bool     `json:"favorited"`
+// SimpleArtist 简化的艺术家信息用于 Opera 响应
+type SimpleArtist struct {
+	ArtistID uint   `json:"artist_id"`
+	Name     string `json:"name"`
+	Avatar   string `json:"avatar,omitempty"`
 }
 
-// ArtistResponse 用于 API 返回的 DTO
+// SimpleOpera 简化的作品信息用于 Artist 响应（不包含艺术家信息，避免冗余）
+type SimpleOpera struct {
+	OperaID    uint      `json:"opera_id"`
+	OperaTitle string    `json:"opera_title"`
+	Avatar     *string   `json:"avatar,omitempty"`
+	Duration   *string   `json:"duration,omitempty"`
+	PlayCount  int64     `json:"play_count"`
+	LikeCount  int64     `json:"like_count"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+// OperaListResponse 用于列表页的简化响应
+type OperaListResponse struct {
+	OperaID    uint           `json:"opera_id"`
+	OperaTitle string         `json:"opera_title"`
+	Artists    []SimpleArtist `json:"artists"`
+	Avatar     *string        `json:"avatar"`
+	Duration   *string        `json:"duration,omitempty"`
+	IsHidden   bool           `json:"is_hidden"`
+	PlayCount  int64          `json:"play_count"`
+	LikeCount  int64          `json:"like_count"`
+	CreatedAt  time.Time      `json:"created_at"`
+}
+
+// OperaDetailResponse 用于详情页的完整响应
+type OperaDetailResponse struct {
+	OperaID       uint           `json:"opera_id"`
+	OperaTitle    string         `json:"opera_title"`
+	Artists       []SimpleArtist `json:"artists"`
+	ReleaseDate   *string        `json:"release_date,omitempty"`
+	Duration      *string        `json:"duration,omitempty"`
+	MusicPath     *string        `json:"music_path,omitempty"`
+	VideoPath     string         `json:"video_path"`
+	SrtPath       *string        `json:"srt_path,omitempty"`
+	Description   string         `json:"description"`
+	Avatar        *string        `json:"avatar"`
+	AiSummary     string         `json:"ai_summary,omitempty"`
+	IsHidden      bool           `json:"is_hidden"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	LikeCount     int64          `json:"like_count"`
+	FavoriteCount int64          `json:"favorite_count"`
+	ShareCount    int64          `json:"share_count"`
+	PlayCount     int64          `json:"play_count"`
+	Liked         bool           `json:"liked"`
+	Favorited     bool           `json:"favorited"`
+}
+
+// OperaResponse 通用响应（向后兼容）
+type OperaResponse struct {
+	OperaID       uint           `json:"opera_id"`
+	OperaTitle    string         `json:"opera_title"`
+	Artists       []SimpleArtist `json:"artists"`
+	ReleaseDate   *string        `json:"release_date"`
+	Duration      *string        `json:"duration"`
+	MusicPath     *string        `json:"music_path"` // 完整 URL
+	VideoPath     string         `json:"video_path"` // 完整 URL
+	SrtPath       *string        `json:"srt_path"`   // 字幕 URL
+	Description   string         `json:"description"`
+	Avatar        *string        `json:"avatar"` // 完整 URL
+	AiSummary     string         `json:"ai_summary"`
+	IsHidden      bool           `json:"is_hidden"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	LikeCount     int64          `json:"like_count"`
+	FavoriteCount int64          `json:"favorite_count"`
+	ShareCount    int64          `json:"share_count"`
+	PlayCount     int64          `json:"play_count"`
+	Liked         bool           `json:"liked"`
+	Favorited     bool           `json:"favorited"`
+}
+
+// ArtistListResponse 用于艺术家列表的简化响应
+type ArtistListResponse struct {
+	ArtistID  uint      `json:"artist_id"`
+	Name      string    `json:"name"`
+	Avatar    *string   `json:"avatar"`
+	Bio       string    `json:"bio,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// ArtistDetailResponse 用于艺术家详情的完整响应
+type ArtistDetailResponse struct {
+	ArtistID  uint          `json:"artist_id"`
+	Name      string        `json:"name"`
+	Bio       string        `json:"bio"`
+	Avatar    *string       `json:"avatar"`
+	Operas    []SimpleOpera `json:"operas,omitempty"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
+// ArtistResponse 通用响应（向后兼容）
 type ArtistResponse struct {
 	ArtistID  uint             `json:"artist_id"`
 	Name      string           `json:"name"`
@@ -113,15 +188,15 @@ type UpdateOperaRequest struct {
 
 // CreateArtistRequest DTO (POST /admin/artists)
 type CreateArtistRequest struct {
-	Name string `json:"name" binding:"required"`
-	Bio  string `json:"bio"`
+	Name   string `json:"name" binding:"required"`
+	Bio    string `json:"bio"`
 	Avatar string `json:"avatar"`
 }
 
 // UpdateArtistRequest DTO (PUT /admin/artists/:id)
 type UpdateArtistRequest struct {
-	Name string `json:"name"`
-	Bio  string `json:"bio"`
+	Name   string `json:"name"`
+	Bio    string `json:"bio"`
 	Avatar string `json:"avatar"`
 }
 

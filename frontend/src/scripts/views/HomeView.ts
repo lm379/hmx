@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 import VideoCard from '../../components/VideoCard.vue';
 import Pagination from '../../components/Pagination.vue';
 import axios from 'axios';
-import type { Opera } from '../../types';
+import type { OperaListItem } from '../../types';
 
 export default defineComponent({
   name: 'HomeView',
@@ -13,7 +13,7 @@ export default defineComponent({
   },
   setup() {
     const router = useRouter();
-    const operas: Ref<Opera[]> = ref([]);
+    const operas: Ref<OperaListItem[]> = ref([]);
     const loading = ref(true);
     const currentPage = ref(1);
     const pageSize = ref(15); // Grid usually fits 12 better (4x3)

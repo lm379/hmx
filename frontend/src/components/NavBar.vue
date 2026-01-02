@@ -35,10 +35,10 @@
               <div class="dropdown-item" @click.stop="handleLogout">退出登录</div>
             </div>
           </div>
-          <div class="action-item" @click="goProfile">
+          <div class="action-item" @click="goCollection">
             <span>收藏</span>
           </div>
-          <div class="action-item" @click="goProfile">
+          <div class="action-item" @click="goHistory">
             <span>历史</span>
           </div>
         </template>
@@ -54,10 +54,6 @@
             <span class="login-text">登录</span>
           </div>
         </template>
-
-        <button class="upload-btn">
-          <span>投稿</span>
-        </button>
       </div>
     </div>
   </div>

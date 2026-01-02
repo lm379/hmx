@@ -1,11 +1,12 @@
 import { defineComponent, computed, type PropType } from 'vue';
-import type { Opera } from '../../types';
+import type { OperaListItem, SimpleOpera } from '../../types';
+type VideoCardProps = OperaListItem | SimpleOpera;
 
 export default defineComponent({
   name: 'VideoCard',
   props: {
     opera: {
-      type: Object as PropType<Opera>,
+      type: Object as PropType<VideoCardProps>,
       required: true
     }
   },
@@ -15,11 +16,14 @@ export default defineComponent({
       return props.opera.avatar || 'https://via.placeholder.com/320x180?text=No+Cover';
     });
 
-    // Mock uploader name since API doesn't provide it yet
+    // 显示艺术家名字
     const uploaderName = computed(() => {
-      // 超过三人则只显示前三人名字
-      const names = props.opera.artists.slice(0, 3).map(artist => artist.Name);
-      return names.length === 0 ? "黄梅戏官方" : (names.length === 3 ? names.join(", ") + "等" : names.join(", "));
+      // SimpleOpera 不包含 artists 字段，或者检查 artists 是否存在且有内容
+      if ('artists' in props.opera && props.opera.artists && props.opera.artists.length > 0) {
+        const names = props.opera.artists.slice(0, 3).map(artist => artist.name);
+        return names.length === 3 ? names.join(", ") + "等" : names.join(", ");
+      }
+      return null; // 返回 null 表示不显示艺术家信息
     });
 
     const formatDuration = (durationStr?: string) => {

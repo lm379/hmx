@@ -41,7 +41,7 @@ func HandleAdminGetOperas(c *gin.Context) {
 	}
 
 	operaResponses := converter.ToOperaResponseList(operas)
-	
+
 	// Count stats
 	if len(operaResponses) > 0 {
 		operaIDs := make([]uint, len(operaResponses))

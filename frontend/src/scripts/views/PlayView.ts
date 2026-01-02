@@ -4,7 +4,7 @@ import { useAuthStore } from '../../stores/auth';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import DPlayer from 'dplayer';
-import type { Opera, Comment } from '../../types';
+import type { OperaDetail, OperaListItem, Comment } from '../../types';
 import EmojiIcon from '../../assets/emoji.svg?component';
 import PlayCountIcon from '../../assets/play_count.svg?component';
 import LikeIcon from '../../assets/like.svg?component';
@@ -25,12 +25,12 @@ export default defineComponent({
     const router = useRouter();
     const authStore = useAuthStore();
 
-    const opera = ref<Opera | null>(null);
+    const opera = ref<OperaDetail | null>(null);
     const loading = ref(true);
     const isPip = ref(false);
     const playerBox = ref<HTMLElement | null>(null);
     const dplayerContainer = ref<HTMLElement | null>(null);
-    const recommendations = ref<Opera[]>([]);
+    const recommendations = ref<OperaListItem[]>([]);
     const newCommentText = ref('');
     const submittingComment = ref(false);
     const showEmojiPicker = ref(false);
@@ -340,10 +340,10 @@ export default defineComponent({
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     };
 
-    const formatArtists = (artists: { Name: string }[]) => {
+    const formatArtists = (artists: { name: string }[]) => {
       if (!artists || artists.length === 0) return '黄梅戏官方';
       // 超过三人则只显示前三人名字
-      const names = artists.slice(0, 3).map(artist => artist.Name);
+      const names = artists.slice(0, 3).map(artist => artist.name);
       return names.length === 3 ? names.join(', ') + '等' : names.join(', ');
     };
 

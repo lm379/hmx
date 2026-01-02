@@ -1,7 +1,7 @@
 import { defineComponent, ref, onMounted, type Ref } from 'vue';
 import axios from 'axios';
 import Pagination from '../../components/Pagination.vue';
-import type { Artist } from '../../types';
+import type { ArtistListItem } from '../../types';
 
 export default defineComponent({
   name: 'ArtistListView',
@@ -9,7 +9,7 @@ export default defineComponent({
     Pagination
   },
   setup() {
-    const artists: Ref<Artist[]> = ref([]);
+    const artists: Ref<ArtistListItem[]> = ref([]);
     const loading = ref(true);
     const currentPage = ref(1);
     const pageSize = ref(10);

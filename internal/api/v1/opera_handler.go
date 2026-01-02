@@ -47,21 +47,19 @@ func HandleGetOperas(c *gin.Context) {
 		return
 	}
 
-	// 转换为响应格式，自动处理 URL
-	operaResponses := converter.ToOperaResponseList(operas)
+	// 转换为列表响应格式（简化版）
+	operaResponses := converter.ToOperaListResponseList(operas)
 
-	// 批量获取计数，避免N+1查询问题
+	// 批量获取播放和点赞计数
 	if len(operaResponses) > 0 {
 		operaIDs := make([]uint, len(operaResponses))
 		for i, r := range operaResponses {
 			operaIDs[i] = r.OperaID
 		}
 
-		likes, favorites, shares, plays := services.BatchGetCounts(operaIDs)
+		likes, _, _, plays := services.BatchGetCounts(operaIDs)
 		for _, r := range operaResponses {
 			r.LikeCount = likes[r.OperaID]
-			r.FavoriteCount = favorites[r.OperaID]
-			r.ShareCount = shares[r.OperaID]
 			r.PlayCount = plays[r.OperaID]
 		}
 	}
@@ -95,8 +93,8 @@ func HandleGetOperaByID(c *gin.Context) {
 		return
 	}
 
-	// 转换为响应格式，自动处理 URL
-	operaResponse := converter.ToOperaResponse(opera)
+	// 转换为详情响应格式（完整版）
+	operaResponse := converter.ToOperaDetailResponse(opera)
 	// 计数与用户状态
 	lc, fc, sc, pc := services.GetCounts(operaResponse.OperaID)
 	operaResponse.LikeCount = lc
