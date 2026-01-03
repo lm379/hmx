@@ -37,21 +37,22 @@ func ToggleLike(userID, operaID uint) (*InteractionResponse, error) {
 	var liked bool
 	// 尝试查找点赞
 	_, err := interactionRepo.GetLike(userID, operaID)
-	if err == nil {
+	switch err {
+	case nil:
 		// 找到了 -> 取消点赞
 		if err := interactionRepo.DeleteLike(userID, operaID); err != nil {
 			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to unlike"}
 		}
 		status = "unliked"
 		liked = false
-	} else if err == gorm.ErrRecordNotFound {
+	case gorm.ErrRecordNotFound:
 		// 没找到 -> 创建点赞
 		if err := interactionRepo.CreateLike(userID, operaID); err != nil {
 			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to like"}
 		}
 		status = "liked"
 		liked = true
-	} else {
+	default:
 		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Database error"}
 	}
 
@@ -81,19 +82,20 @@ func ToggleFavorite(userID, operaID uint) (*InteractionResponse, error) {
 	var favorited bool
 	// 切换逻辑
 	_, err := interactionRepo.GetFavorite(userID, operaID)
-	if err == nil {
+	switch err {
+	case nil:
 		if err := interactionRepo.DeleteFavorite(userID, operaID); err != nil {
 			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to unfavorite"}
 		}
 		status = "unfavorited"
 		favorited = false
-	} else if err == gorm.ErrRecordNotFound {
+	case gorm.ErrRecordNotFound:
 		if err := interactionRepo.CreateFavorite(userID, operaID); err != nil {
 			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to favorite"}
 		}
 		status = "favorited"
 		favorited = true
-	} else {
+	default:
 		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Database error"}
 	}
 
@@ -270,19 +272,20 @@ func ToggleCommentLike(userID, commentID uint) (*CommentLikeResponse, error) {
 	var liked bool
 	// Try to get existing like
 	_, err := interactionRepo.GetCommentLike(userID, commentID)
-	if err == nil {
+	switch err {
+	case nil:
 		// Found -> Unlike
 		if err := interactionRepo.DeleteCommentLike(userID, commentID); err != nil {
 			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to unlike comment"}
 		}
 		liked = false
-	} else if err == gorm.ErrRecordNotFound {
+	case gorm.ErrRecordNotFound:
 		// Not found -> Like
 		if err := interactionRepo.CreateCommentLike(userID, commentID); err != nil {
 			return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Failed to like comment"}
 		}
 		liked = true
-	} else {
+	default:
 		return nil, &ServiceError{Code: http.StatusInternalServerError, Message: "Database error"}
 	}
 
