@@ -32,7 +32,7 @@
     </div>
 
     <!-- Dialog -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑艺术家' : '添加艺术家'" width="40%">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑艺术家' : '添加艺术家'" width="40%" @paste="handlePaste">
       <el-form :model="form" label-width="80px">
         <el-form-item label="姓名">
           <el-input v-model="form.name" />
@@ -51,9 +51,16 @@
                :on-remove="handleElFileRemove"
                :on-exceed="handleExceed"
                list-type="picture"
+               drag
              >
-               <template #trigger>
-                 <el-button type="primary">选择图片</el-button>
+               <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+               <div class="el-upload__text">
+                 将文件拖到此处，或<em>点击上传</em>
+               </div>
+               <template #tip>
+                 <div class="el-upload__tip">
+                   支持拖拽图片，或在对话框内粘贴剪贴板图片
+                 </div>
                </template>
              </el-upload>
         </el-form-item>
@@ -70,7 +77,14 @@
 
 <script lang="ts">
 import ArtistManagerScript from '../../scripts/views/admin/ArtistManager';
-export default ArtistManagerScript;
+import { UploadFilled } from '@element-plus/icons-vue';
+
+export default {
+  ...ArtistManagerScript,
+  components: {
+    UploadFilled
+  }
+};
 </script>
 
 <style scoped src="../../styles/views/admin/ArtistManager.css"></style>
