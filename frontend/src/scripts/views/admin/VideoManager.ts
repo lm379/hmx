@@ -148,6 +148,28 @@ export default defineComponent({
       ElMessage.warning(`限制选择 1 个文件，请先移除旧文件`);
     };
 
+    const handlePaste = (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item && item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            avatarFile.value = file;
+            if (avatarUploadRef.value) {
+              avatarUploadRef.value.clearFiles();
+              // @ts-ignore
+              avatarUploadRef.value.handleStart(file);
+            }
+            ElMessage.success('已从剪贴板读取图片');
+            break;
+          }
+        }
+      }
+    };
+
     const uploadFile = async (file: File, type: string) => {
       const res = await axios.post('/api/v1/uploads/presign', {
         filename: file.name,
@@ -245,6 +267,7 @@ export default defineComponent({
       handleElFileChange,
       handleElFileRemove,
       handleExceed,
+      handlePaste,
       submitForm,
       videoFile,
       avatarFile

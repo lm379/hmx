@@ -52,7 +52,7 @@
     </div>
 
     <!-- Edit/Create Dialog -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑视频' : '上传视频'" width="50%">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑视频' : '上传视频'" width="50%" @paste="handlePaste">
       <el-form :model="form" label-width="100px">
         <el-form-item label="标题">
           <el-input v-model="form.title" />
@@ -71,10 +71,12 @@
                :on-change="(file: any) => handleElFileChange(file, 'video')"
                :on-remove="() => handleElFileRemove('video')"
                :on-exceed="handleExceed"
+               drag
              >
-               <template #trigger>
-                 <el-button type="primary">选择文件</el-button>
-               </template>
+               <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+               <div class="el-upload__text">
+                 将视频拖到此处，或<em>点击上传</em>
+               </div>
              </el-upload>
              <div v-if="isEdit" class="el-form-item__error" style="position: static; color: #909399;">如果不修改视频，请忽略此项</div>
         </el-form-item>
@@ -89,9 +91,16 @@
                :on-remove="() => handleElFileRemove('avatar')"
                :on-exceed="handleExceed"
                list-type="picture"
+               drag
              >
-               <template #trigger>
-                 <el-button type="primary">选择图片</el-button>
+               <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+               <div class="el-upload__text">
+                 将文件拖到此处，或<em>点击上传</em>
+               </div>
+               <template #tip>
+                 <div class="el-upload__tip">
+                   支持拖拽图片，或在对话框内粘贴剪贴板图片
+                 </div>
                </template>
              </el-upload>
         </el-form-item>
@@ -129,7 +138,14 @@
 
 <script lang="ts">
 import VideoManagerScript from '../../scripts/views/admin/VideoManager';
-export default VideoManagerScript;
+import { UploadFilled } from '@element-plus/icons-vue';
+
+export default {
+  ...VideoManagerScript,
+  components: {
+    UploadFilled
+  }
+};
 </script>
 
 <style scoped src="../../styles/views/admin/VideoManager.css"></style>
