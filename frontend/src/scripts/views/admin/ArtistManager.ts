@@ -48,8 +48,8 @@ export default defineComponent({
       form.name = '';
       form.bio = '';
       form.avatar = '';
-      
-      if(avatarUploadRef.value) avatarUploadRef.value.clearFiles();
+
+      if (avatarUploadRef.value) avatarUploadRef.value.clearFiles();
       avatarFile.value = null;
 
       dialogVisible.value = true;
@@ -61,10 +61,10 @@ export default defineComponent({
       form.name = row.name;
       form.bio = row.bio;
       form.avatar = '';
-      
-      if(avatarUploadRef.value) avatarUploadRef.value.clearFiles();
+
+      if (avatarUploadRef.value) avatarUploadRef.value.clearFiles();
       avatarFile.value = null;
-      
+
       dialogVisible.value = true;
     };
 
@@ -102,34 +102,69 @@ export default defineComponent({
       submitting.value = true;
       try {
         let aPath = form.avatar;
-        if (avatarFile.value) {
+
+        // 如果是新建艺术家且有头像文件，先创建艺术家再上传头像
+        if (!isEdit.value && avatarFile.value) {
+          // 先创建艺术家（不带头像）
+          const createRes = await axios.post('/api/v1/admin/artists', {
+            name: form.name,
+            bio: form.bio,
+            avatar: ''
+          });
+          const artistId = createRes.data.data.artist_id;
+
+          // 上传头像到艺术家专属路径
           const res = await axios.post('/api/v1/uploads/presign', {
             filename: avatarFile.value.name,
             content_type: avatarFile.value.type,
-            upload_type: 'avatars'
+            upload_type: 'avatars',
+            artist_id: artistId
           });
           const { upload_url, object_key } = res.data.data;
           await axios.put(upload_url, avatarFile.value, {
             headers: { 'Content-Type': avatarFile.value.type }
           });
-          aPath = object_key;
-        }
 
-        const data = {
-          name: form.name,
-          bio: form.bio,
-          avatar: aPath
-        };
+          // 更新艺术家头像
+          await axios.put(`/api/v1/admin/artists/${artistId}`, {
+            avatar: object_key
+          });
 
-        if (isEdit.value) {
-          await axios.put(`/api/v1/admin/artists/${form.id}`, data);
+          ElMessage.success('创建成功');
+          dialogVisible.value = false;
+          fetchData();
         } else {
-          await axios.post('/api/v1/admin/artists', data);
-        }
+          // 编辑模式或没有新头像
+          if (avatarFile.value) {
+            const res = await axios.post('/api/v1/uploads/presign', {
+              filename: avatarFile.value.name,
+              content_type: avatarFile.value.type,
+              upload_type: 'avatars',
+              artist_id: isEdit.value ? form.id : undefined
+            });
+            const { upload_url, object_key } = res.data.data;
+            await axios.put(upload_url, avatarFile.value, {
+              headers: { 'Content-Type': avatarFile.value.type }
+            });
+            aPath = object_key;
+          }
 
-        ElMessage.success(isEdit.value ? '更新成功' : '创建成功');
-        dialogVisible.value = false;
-        fetchData();
+          const data = {
+            name: form.name,
+            bio: form.bio,
+            avatar: aPath
+          };
+
+          if (isEdit.value) {
+            await axios.put(`/api/v1/admin/artists/${form.id}`, data);
+          } else {
+            await axios.post('/api/v1/admin/artists', data);
+          }
+
+          ElMessage.success(isEdit.value ? '更新成功' : '创建成功');
+          dialogVisible.value = false;
+          fetchData();
+        }
       } catch (e) {
         ElMessage.error('操作失败');
       } finally {

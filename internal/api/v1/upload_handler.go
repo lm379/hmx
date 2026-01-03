@@ -43,11 +43,17 @@ func HandleRequestUploadURL(c *gin.Context) {
 	var basePath string
 	switch input.UploadType {
 	case "avatars":
-		if userID == 0 {
-			resp.Unauthorized(c, "Login required for avatar upload")
-			return
+		// 如果提供了 artist_id，则上传到艺术家头像路径
+		if input.ArtistID != nil && *input.ArtistID > 0 {
+			basePath = "artists/avatar/" + strconv.FormatUint(uint64(*input.ArtistID), 10)
+		} else {
+			// 否则上传到用户头像路径
+			if userID == 0 {
+				resp.Unauthorized(c, "Login required for avatar upload")
+				return
+			}
+			basePath = "user/avatar/" + strconv.FormatUint(uint64(userID), 10)
 		}
-		basePath = "user/avatar/" + strconv.FormatUint(uint64(userID), 10)
 	case "videos":
 		basePath = "tmp"
 	default:

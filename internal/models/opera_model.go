@@ -159,6 +159,7 @@ type PresignRequest struct {
 	Filename    string `json:"filename" binding:"required"`
 	ContentType string `json:"content_type" binding:"required"`
 	UploadType  string `json:"upload_type" binding:"required"` // 'videos', 'avatars'
+	ArtistID    *uint  `json:"artist_id,omitempty"`              // 可选，用于艺术家头像上传
 }
 
 // PresignResponse DTO
