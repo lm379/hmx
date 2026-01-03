@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/lm379/hmx/database"
 	"github.com/lm379/hmx/internal/models"
 	"gorm.io/gorm"
@@ -254,67 +256,65 @@ func (r *InteractionRepo) CountPlays(operaID uint) int64 {
 	return count
 }
 
-// BatchCountAll 一次查询获取所有计数（点赞、收藏、分享、播放）
+// BatchCountAll 批量获取所有计数（点赞、收藏、分享、播放）
 func (r *InteractionRepo) BatchCountAll(operaIDs []uint) (likes, favorites, shares, plays map[uint]int64) {
 	if len(operaIDs) == 0 {
 		return make(map[uint]int64), make(map[uint]int64), make(map[uint]int64), make(map[uint]int64)
 	}
 
-	type Result struct {
+	type CountResult struct {
 		OperaID uint
-		Likes   int64
-		Favs    int64
-		Shares  int64
-		Plays   int64
+		Count   int64
 	}
 
-	var results []Result
-
-	// 使用子查询一次性获取所有计数
-	r.getDB().Raw(`
-		SELECT 
-			o.opera_id,
-			COALESCE(l.count, 0) as likes,
-			COALESCE(f.count, 0) as favs,
-			COALESCE(s.count, 0) as shares,
-			COALESCE(p.count, 0) as plays
-		FROM (SELECT unnest(?::int[]) AS opera_id) o
-		LEFT JOIN (
-			SELECT opera_id, COUNT(*) as count 
-			FROM likes 
-			WHERE opera_id = ANY(?)
-			GROUP BY opera_id
-		) l ON o.opera_id = l.opera_id
-		LEFT JOIN (
-			SELECT opera_id, COUNT(*) as count 
-			FROM favorites 
-			WHERE opera_id = ANY(?)
-			GROUP BY opera_id
-		) f ON o.opera_id = f.opera_id
-		LEFT JOIN (
-			SELECT opera_id, COUNT(*) as count 
-			FROM shares 
-			WHERE opera_id = ANY(?)
-			GROUP BY opera_id
-		) s ON o.opera_id = s.opera_id
-		LEFT JOIN (
-			SELECT opera_id, SUM(count) as count 
-			FROM play_history 
-			WHERE opera_id = ANY(?)
-			GROUP BY opera_id
-		) p ON o.opera_id = p.opera_id
-	`, operaIDs, operaIDs, operaIDs, operaIDs, operaIDs).Scan(&results)
-
+	// 初始化结果 map
 	likes = make(map[uint]int64)
 	favorites = make(map[uint]int64)
 	shares = make(map[uint]int64)
 	plays = make(map[uint]int64)
 
-	for _, result := range results {
-		likes[result.OperaID] = result.Likes
-		favorites[result.OperaID] = result.Favs
-		shares[result.OperaID] = result.Shares
-		plays[result.OperaID] = result.Plays
+	// 批量统计点赞数
+	var likeResults []CountResult
+	r.getDB().Model(&models.Like{}).
+		Select("opera_id, COUNT(*) as count").
+		Where("opera_id IN ?", operaIDs).
+		Group("opera_id").
+		Scan(&likeResults)
+	for _, result := range likeResults {
+		likes[result.OperaID] = result.Count
+	}
+
+	// 批量统计收藏数
+	var favResults []CountResult
+	r.getDB().Model(&models.Favorite{}).
+		Select("opera_id, COUNT(*) as count").
+		Where("opera_id IN ?", operaIDs).
+		Group("opera_id").
+		Scan(&favResults)
+	for _, result := range favResults {
+		favorites[result.OperaID] = result.Count
+	}
+
+	// 批量统计分享数
+	var shareResults []CountResult
+	r.getDB().Model(&models.Share{}).
+		Select("opera_id, COUNT(*) as count").
+		Where("opera_id IN ?", operaIDs).
+		Group("opera_id").
+		Scan(&shareResults)
+	for _, result := range shareResults {
+		shares[result.OperaID] = result.Count
+	}
+
+	// 批量统计播放数（SUM count字段）
+	var playResults []CountResult
+	r.getDB().Model(&models.PlayHistory{}).
+		Select("opera_id, COALESCE(SUM(count), 0) as count").
+		Where("opera_id IN ?", operaIDs).
+		Group("opera_id").
+		Scan(&playResults)
+	for _, result := range playResults {
+		plays[result.OperaID] = result.Count
 	}
 
 	return
@@ -368,34 +368,95 @@ func (r *InteractionRepo) CountCommentLikes(commentID uint) int64 {
 	return count
 }
 
-// GetCommentsByOperaID 获取作品的评论列表 (Updated to include like count and user liked status)
+// GetCommentsByOperaID 获取作品的评论列表（包含点赞数和用户点赞状态）
 func (r *InteractionRepo) GetCommentsByOperaID(operaID uint, currentUserID *uint) ([]models.CommentDTO, error) {
-	var comments []models.CommentDTO
-
-	query := r.getDB().Table("comments").
-		Select(`
-			comments.comment_id, 
-			COALESCE(comments.user_id, 0) as user_id, 
-			COALESCE(users.username, '已注销用户') as username, 
-			users.icon as user_icon, 
-			comments.opera_id, 
-			comments.parent_comment_id, 
-			comments.comment_text, 
-			comments.created_at,
-			(SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.comment_id) as like_count
-		`).
-		Joins("LEFT JOIN users ON users.user_id = comments.user_id").
-		Where("comments.opera_id = ?", operaID).
-		Order("comments.created_at DESC")
-
-	if currentUserID != nil {
-		query = query.Select(query.Statement.Selects[0]+`, 
-			EXISTS(SELECT 1 FROM comment_likes WHERE comment_likes.comment_id = comments.comment_id AND comment_likes.user_id = ?) as liked
-		`, *currentUserID)
-	} else {
-		query = query.Select(query.Statement.Selects[0] + `, false as liked`)
+	// 定义基础评论结构
+	type CommentWithUser struct {
+		CommentID       uint
+		UserID          *uint
+		Username        string
+		UserIcon        *string
+		OperaID         uint
+		ParentCommentID *uint
+		CommentText     string
+		CreatedAt       time.Time
 	}
 
-	err := query.Scan(&comments).Error
-	return comments, err
+	var baseComments []CommentWithUser
+
+	// 查询评论基础信息和用户信息
+	err := r.getDB().Table("comments").
+		Select("comments.comment_id, comments.user_id, COALESCE(users.username, '已注销用户') as username, users.icon as user_icon, comments.opera_id, comments.parent_comment_id, comments.comment_text, comments.created_at").
+		Joins("LEFT JOIN users ON users.user_id = comments.user_id").
+		Where("comments.opera_id = ?", operaID).
+		Order("comments.created_at DESC").
+		Scan(&baseComments).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(baseComments) == 0 {
+		return []models.CommentDTO{}, nil
+	}
+
+	// 收集所有评论 ID
+	commentIDs := make([]uint, len(baseComments))
+	for i, comment := range baseComments {
+		commentIDs[i] = comment.CommentID
+	}
+
+	// 批量查询每个评论的点赞数
+	type LikeCountResult struct {
+		CommentID uint
+		Count     int64
+	}
+	var likeCountResults []LikeCountResult
+	r.getDB().Model(&models.CommentLike{}).
+		Select("comment_id, COUNT(*) as count").
+		Where("comment_id IN ?", commentIDs).
+		Group("comment_id").
+		Scan(&likeCountResults)
+
+	likeCountMap := make(map[uint]int64)
+	for _, result := range likeCountResults {
+		likeCountMap[result.CommentID] = result.Count
+	}
+
+	// 批量查询当前用户的点赞状态
+	likedMap := make(map[uint]bool)
+	if currentUserID != nil {
+		var likedCommentIDs []uint
+		r.getDB().Model(&models.CommentLike{}).
+			Where("user_id = ? AND comment_id IN ?", *currentUserID, commentIDs).
+			Pluck("comment_id", &likedCommentIDs)
+
+		for _, id := range likedCommentIDs {
+			likedMap[id] = true
+		}
+	}
+
+	// 组装结果
+	comments := make([]models.CommentDTO, len(baseComments))
+	for i, comment := range baseComments {
+		userID := uint(0)
+		if comment.UserID != nil {
+			userID = *comment.UserID
+		}
+
+		comments[i] = models.CommentDTO{
+			CommentID:       comment.CommentID,
+			UserID:          userID,
+			Username:        comment.Username,
+			UserIcon:        comment.UserIcon,
+			OperaID:         comment.OperaID,
+			ParentCommentID: comment.ParentCommentID,
+			CommentText:     comment.CommentText,
+			CreatedAt:       comment.CreatedAt,
+			LikeCount:       likeCountMap[comment.CommentID],
+			Liked:           likedMap[comment.CommentID],
+		}
+	}
+
+	return comments, nil
 }
