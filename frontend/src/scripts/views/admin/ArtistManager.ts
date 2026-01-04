@@ -11,6 +11,7 @@ export default defineComponent({
     const total = ref(0);
     const loading = ref(false);
     const avatarUploadRef = ref<UploadInstance>();
+    const uploadProgress = ref(0);
 
     const dialogVisible = ref(false);
     const isEdit = ref(false);
@@ -87,6 +88,11 @@ export default defineComponent({
     const handleElFileChange = (file: UploadFile) => {
       if (file.raw) {
         avatarFile.value = file.raw;
+        // If name is empty, auto-fill with filename (without extension)
+        if (!form.name) {
+          const name = file.name.split('.').slice(0, -1).join('.') || file.name;
+          form.name = name;
+        }
       }
     };
 
@@ -122,6 +128,7 @@ export default defineComponent({
 
     const submitForm = async () => {
       submitting.value = true;
+      uploadProgress.value = 0;
       try {
         let aPath = form.avatar;
 
@@ -144,7 +151,12 @@ export default defineComponent({
           });
           const { upload_url, object_key } = res.data.data;
           await axios.put(upload_url, avatarFile.value, {
-            headers: { 'Content-Type': avatarFile.value.type }
+            headers: { 'Content-Type': avatarFile.value.type },
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              }
+            }
           });
 
           // 更新艺术家头像
@@ -166,7 +178,12 @@ export default defineComponent({
             });
             const { upload_url, object_key } = res.data.data;
             await axios.put(upload_url, avatarFile.value, {
-              headers: { 'Content-Type': avatarFile.value.type }
+              headers: { 'Content-Type': avatarFile.value.type },
+              onUploadProgress: (progressEvent) => {
+                if (progressEvent.total) {
+                  uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                }
+              }
             });
             aPath = object_key;
           }
@@ -192,6 +209,7 @@ export default defineComponent({
       } finally {
         submitting.value = false;
         avatarFile.value = null;
+        uploadProgress.value = 0;
       }
     };
 
@@ -202,6 +220,7 @@ export default defineComponent({
       total,
       loading,
       avatarUploadRef,
+      uploadProgress,
       dialogVisible,
       isEdit,
       submitting,

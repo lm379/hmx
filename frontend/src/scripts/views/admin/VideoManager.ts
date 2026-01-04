@@ -12,6 +12,8 @@ export default defineComponent({
     const loading = ref(false);
     const videoUploadRef = ref<UploadInstance>();
     const avatarUploadRef = ref<UploadInstance>();
+    const videoProgress = ref(0);
+    const avatarProgress = ref(0);
 
     const dialogVisible = ref(false);
     const isEdit = ref(false);
@@ -134,7 +136,14 @@ export default defineComponent({
 
     const handleElFileChange = (file: UploadFile, type: string) => {
       if (file.raw) {
-        if (type === 'video') videoFile.value = file.raw;
+        if (type === 'video') {
+          videoFile.value = file.raw;
+          // If title is empty, auto-fill with filename (without extension)
+          if (!form.title) {
+            const name = file.name.split('.').slice(0, -1).join('.') || file.name;
+            form.title = name;
+          }
+        }
         if (type === 'avatar') avatarFile.value = file.raw;
       }
     };
@@ -170,16 +179,28 @@ export default defineComponent({
       }
     };
 
-    const uploadFile = async (file: File, type: string) => {
+    const uploadFile = async (file: File, type: string, customFilename?: string) => {
+      const filename = customFilename || file.name;
       const res = await axios.post('/api/v1/uploads/presign', {
-        filename: file.name,
+        filename: filename,
         content_type: file.type,
         upload_type: type === 'video' ? 'videos' : 'avatars'
       });
       const { upload_url, object_key } = res.data.data;
       
       await axios.put(upload_url, file, {
-        headers: { 'Content-Type': file.type }
+        headers: { 'Content-Type': file.type },
+        onUploadProgress: (progressEvent) => {
+          const total = progressEvent.total || file.size;
+          if (total) {
+            const percent = Math.round((progressEvent.loaded * 100) / total);
+            if (type === 'video') {
+              videoProgress.value = percent;
+            } else {
+              avatarProgress.value = percent;
+            }
+          }
+        }
       });
       
       return object_key;
@@ -187,6 +208,8 @@ export default defineComponent({
 
     const submitForm = async () => {
       submitting.value = true;
+      videoProgress.value = 0;
+      avatarProgress.value = 0;
       try {
         let vPath = form.video_path;
         let aPath = form.avatar_path;
@@ -198,7 +221,9 @@ export default defineComponent({
         }
 
         if (videoFile.value) {
-          vPath = await uploadFile(videoFile.value, 'video');
+          const ext = videoFile.value.name.split('.').pop();
+          const videoFilename = ext ? `${form.title}.${ext}` : form.title;
+          vPath = await uploadFile(videoFile.value, 'video', videoFilename);
         }
         if (avatarFile.value) {
           aPath = await uploadFile(avatarFile.value, 'avatar');
@@ -243,6 +268,8 @@ export default defineComponent({
         submitting.value = false;
         videoFile.value = null;
         avatarFile.value = null;
+        videoProgress.value = 0;
+        avatarProgress.value = 0;
       }
     };
 
@@ -254,6 +281,8 @@ export default defineComponent({
       loading,
       videoUploadRef,
       avatarUploadRef,
+      videoProgress,
+      avatarProgress,
       dialogVisible,
       isEdit,
       submitting,

@@ -22,13 +22,8 @@
     </el-table>
 
     <div class="pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        layout="prev, pager, next"
-        @current-change="fetchData"
-      />
+      <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total"
+        layout="prev, pager, next" @current-change="fetchData" />
     </div>
 
     <!-- Dialog -->
@@ -41,28 +36,21 @@
           <el-input v-model="form.bio" type="textarea" />
         </el-form-item>
         <el-form-item label="头像">
-            <el-upload
-               ref="avatarUploadRef"
-               class="upload-demo"
-               action="#"
-               :auto-upload="false"
-               :limit="1"
-               :on-change="handleElFileChange"
-               :on-remove="handleElFileRemove"
-               :on-exceed="handleExceed"
-               list-type="picture"
-               drag
-             >
-               <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-               <div class="el-upload__text">
-                 将文件拖到此处，或<em>点击上传</em>
-               </div>
-               <template #tip>
-                 <div class="el-upload__tip">
-                   支持拖拽图片，或在对话框内粘贴剪贴板图片
-                 </div>
-               </template>
-             </el-upload>
+          <el-upload ref="avatarUploadRef" class="upload-demo" action="#" :auto-upload="false" :limit="1"
+            :on-change="handleElFileChange" :on-remove="handleElFileRemove" :on-exceed="handleExceed"
+            list-type="picture" drag>
+            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+            <div class="el-upload__text">
+              将文件拖到此处，或<em>点击上传</em>
+            </div>
+            <template #tip>
+              <div class="el-upload__tip">
+                支持拖拽图片，或在对话框内粘贴剪贴板图片
+              </div>
+            </template>
+          </el-upload>
+          <el-progress v-if="uploadProgress > 0" :percentage="uploadProgress" status="success"
+            style="margin-top: 10px;" />
         </el-form-item>
       </el-form>
       <template #footer>

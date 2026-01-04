@@ -174,6 +174,7 @@ type CreateOperaRequest struct {
 	Description    string   `json:"description"`
 	VideoPath      string   `json:"video_path" binding:"required"` // 必须是 PresignResponse.ObjectKey
 	AvatarPath     string   `json:"avatar_path"`                   // 封面的 ObjectKey
+	Duration       string   `json:"duration"`                      // 时长 (HH:MM:SS)
 	ArtistIDs      []uint   `json:"artist_ids"`                    // 关联的艺术家ID
 	NewArtistNames []string `json:"new_artist_names"`              // 新增艺术家名字（自动创建）
 }
@@ -184,6 +185,7 @@ type UpdateOperaRequest struct {
 	Description    string   `json:"description"`
 	VideoPath      string   `json:"video_path"`
 	AvatarPath     string   `json:"avatar_path"`
+	Duration       string   `json:"duration"`
 	ArtistIDs      []uint   `json:"artist_ids"`
 	NewArtistNames []string `json:"new_artist_names"`
 	IsHidden       *bool    `json:"is_hidden"`

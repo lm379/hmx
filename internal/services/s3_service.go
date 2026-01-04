@@ -44,7 +44,8 @@ func InitS3(ctx context.Context, cfg config.Config) {
 
 // GeneratePresignedUploadURL 生成预签名的 PUT URL
 // uploadType 建议为: "videos", "avatars", "covers"
-func GeneratePresignedUploadURL(ctx context.Context, uploadType, filename, contentType string) (string, string, error) {
+// useUUID 控制是否在文件名前添加 UUID 前缀
+func GeneratePresignedUploadURL(ctx context.Context, uploadType, filename, contentType string, useUUID bool) (string, string, error) {
 	cfg := config.AppConfig
 
 	var basePath string
@@ -58,10 +59,17 @@ func GeneratePresignedUploadURL(ctx context.Context, uploadType, filename, conte
 	}
 
 	// 生成唯一的文件路径 (Object Key)
-	// 格式: videos/uuid-v4-original-filename.mp4
-	ext := filepath.Ext(filename)
-	baseFilename := filename[:len(filename)-len(ext)]
-	objectKey := filepath.Join(basePath, (uuid.New().String() + "-" + baseFilename + ext))
+	var objectKey string
+	if useUUID {
+		// 添加 UUID 前缀以避免文件名冲突
+		ext := filepath.Ext(filename)
+		baseFilename := filename[:len(filename)-len(ext)]
+		objectKey = filepath.Join(basePath, (uuid.New().String() + "-" + baseFilename + ext))
+	} else {
+		// 将传入文件名中的路径部分去掉，只保留文件名
+		filename = filepath.Base(filename)
+		objectKey = filepath.Join(basePath, filename)
+	}
 
 	// 创建 PutObject 请求
 	request := &s3.PutObjectInput{

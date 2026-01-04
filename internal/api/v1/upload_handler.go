@@ -61,7 +61,9 @@ func HandleRequestUploadURL(c *gin.Context) {
 	}
 
 	// 从 service 获取预签名 URL (pass basePath as the uploadType/folder)
-	uploadURL, objectKey, err := services.GeneratePresignedUploadURL(c, basePath, input.Filename, input.ContentType)
+	// 视频文件不使用 UUID，其他类型文件使用 UUID 避免冲突
+	useUUID := input.UploadType != "videos"
+	uploadURL, objectKey, err := services.GeneratePresignedUploadURL(c, basePath, input.Filename, input.ContentType, useUUID)
 	if err != nil {
 		resp.InternalServerError(c, "Failed to generate presigned URL")
 		return

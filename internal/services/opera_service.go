@@ -68,6 +68,7 @@ func CreateOpera(input models.CreateOperaRequest, userID uint) (gin.H, int) {
 		Description: input.Description,
 		VideoPath:   input.VideoPath,
 		Avatar:      sql.NullString{String: input.AvatarPath, Valid: input.AvatarPath != ""},
+		Duration:    sql.NullString{String: input.Duration, Valid: input.Duration != ""},
 		Artists:     artists,
 	}
 
@@ -99,6 +100,9 @@ func UpdateOpera(operaID uint, input models.UpdateOperaRequest) (gin.H, int) {
 	}
 	if input.AvatarPath != "" {
 		updates["avatar"] = input.AvatarPath
+	}
+	if input.Duration != "" {
+		updates["duration"] = input.Duration
 	}
 	if input.IsHidden != nil {
 		updates["is_hidden"] = *input.IsHidden
