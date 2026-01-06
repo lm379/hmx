@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"strconv"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lm379/hmx/internal/models"
@@ -18,54 +18,75 @@ func HandleRequestUploadURL(c *gin.Context) {
 	}
 
 	// 验证 uploadType
-	if input.UploadType != "videos" && input.UploadType != "avatars" {
-		resp.BadRequest(c, "Invalid upload_type. Must be 'videos' or 'avatars'")
+	validTypes := map[string]bool{
+		"user_avatar":   true,
+		"artist_avatar": true,
+		"opera_cover":   true,
+		"video_upload":  true,
+	}
+	if !validTypes[input.UploadType] {
+		resp.BadRequest(c, "Invalid upload_type. Must be 'user_avatar', 'artist_avatar', 'opera_cover', or 'video_upload'")
 		return
 	}
 
 	// 验证 ContentType
-	if input.UploadType == "avatars" && len(input.ContentType) < 6 || input.UploadType == "avatars" && input.ContentType[:6] != "image/" {
-		resp.BadRequest(c, "Invalid content_type for avatar. Must be an image.")
-		return
-	}
-	if input.UploadType == "videos" && len(input.ContentType) < 6 || input.UploadType == "videos" && input.ContentType[:6] != "video/" {
-		resp.BadRequest(c, "Invalid content_type for video. Must be a video.")
-		return
+	if input.UploadType == "video_upload" {
+		// 视频类型必须是video/*
+		if len(input.ContentType) < 6 || input.ContentType[:6] != "video/" {
+			resp.BadRequest(c, "Invalid content_type for video. Must be a video.")
+			return
+		}
+	} else {
+		// 其他类型必须是图片
+		if len(input.ContentType) < 6 || input.ContentType[:6] != "image/" {
+			resp.BadRequest(c, "Invalid content_type. Must be an image.")
+			return
+		}
 	}
 
-	// 获取当前用户ID
+	// 获取当前用户ID和角色（从JWT token）
 	var userID uint
+	var userRole models.UserRole
+
 	if id, exists := c.Get("userID"); exists {
 		userID = id.(uint)
+	} else {
+		resp.Unauthorized(c, "Login required")
+		return
 	}
 
-	// 构造存储路径 (硬编码)
-	var basePath string
-	switch input.UploadType {
-	case "avatars":
-		// 如果提供了 artist_id，则上传到艺术家头像路径
-		if input.ArtistID != nil && *input.ArtistID > 0 {
-			basePath = "artists/avatar/" + strconv.FormatUint(uint64(*input.ArtistID), 10)
-		} else {
-			// 否则上传到用户头像路径
-			if userID == 0 {
-				resp.Unauthorized(c, "Login required for avatar upload")
-				return
-			}
-			basePath = "user/avatar/" + strconv.FormatUint(uint64(userID), 10)
-		}
-	case "videos":
-		basePath = "tmp"
-	default:
-		basePath = input.UploadType
+	if role, exists := c.Get("role"); exists {
+		userRole = models.UserRole(role.(string))
+	} else {
+		resp.Unauthorized(c, "Role not found in token")
+		return
 	}
 
-	// 从 service 获取预签名 URL (pass basePath as the uploadType/folder)
-	// 视频文件不使用 UUID，其他类型文件使用 UUID 避免冲突
-	useUUID := input.UploadType != "videos"
-	uploadURL, objectKey, err := services.GeneratePresignedUploadURL(c, basePath, input.Filename, input.ContentType, useUUID)
+	// 调用S3 service生成预签名URL
+	uploadURL, objectKey, err := services.GeneratePresignedUploadURL(
+		c,
+		input.UploadType,
+		userID,
+		userRole,
+		input.TargetID,
+		input.Filename,
+		input.ContentType,
+	)
 	if err != nil {
-		resp.InternalServerError(c, "Failed to generate presigned URL")
+		// 使用 errors.Is 判断错误类型
+		if errors.Is(err, services.ErrPermissionDenied) {
+			resp.Forbidden(c, err.Error())
+			return
+		}
+		if errors.Is(err, services.ErrInvalidUploadType) {
+			resp.BadRequest(c, err.Error())
+			return
+		}
+		if errors.Is(err, services.ErrOperaNotFound) {
+			resp.NotFound(c, err.Error())
+			return
+		}
+		resp.InternalServerError(c, "Failed to generate presigned URL: "+err.Error())
 		return
 	}
 

@@ -158,8 +158,8 @@ type ArtistResponse struct {
 type PresignRequest struct {
 	Filename    string `json:"filename" binding:"required"`
 	ContentType string `json:"content_type" binding:"required"`
-	UploadType  string `json:"upload_type" binding:"required"` // 'videos', 'avatars'
-	ArtistID    *uint  `json:"artist_id,omitempty"`              // 可选，用于艺术家头像上传
+	UploadType  string `json:"upload_type" binding:"required"` // 'user_avatar', 'artist_avatar', 'opera_cover', 'video_upload'
+	TargetID    uint   `json:"target_id"`                      // 目标ID：用户ID、艺术家ID或曲目ID (video_upload时可为0)
 }
 
 // PresignResponse DTO
@@ -223,18 +223,18 @@ type TencentCloudCallbackRequest struct {
 
 // JobDetail 任务详情
 type JobDetail struct {
-	Code         string        `json:"Code"`         // 状态码：Success
-	Message      string        `json:"Message"`      // 状态消息
-	JobId        string        `json:"JobId"`        // 任务ID
-	Tag          string        `json:"Tag"`          // 任务类型：Transcode, SmartCover, SpeechRecognition
-	State        string        `json:"State"`        // 任务状态：Success, Failed
-	CreationTime string        `json:"CreationTime"` // 创建时间
-	StartTime    string        `json:"StartTime"`    // 开始时间
-	EndTime      string        `json:"EndTime"`      // 结束时间
-	QueueId      string        `json:"QueueId"`      // 队列ID
-	Input        JobInput      `json:"Input"`        // 输入信息
-	Operation    JobOperation  `json:"Operation"`    // 操作信息
-	Workflow     WorkflowInfo  `json:"Workflow"`     // 工作流信息
+	Code         string       `json:"Code"`         // 状态码：Success
+	Message      string       `json:"Message"`      // 状态消息
+	JobId        string       `json:"JobId"`        // 任务ID
+	Tag          string       `json:"Tag"`          // 任务类型：Transcode, SmartCover, SpeechRecognition
+	State        string       `json:"State"`        // 任务状态：Success, Failed
+	CreationTime string       `json:"CreationTime"` // 创建时间
+	StartTime    string       `json:"StartTime"`    // 开始时间
+	EndTime      string       `json:"EndTime"`      // 结束时间
+	QueueId      string       `json:"QueueId"`      // 队列ID
+	Input        JobInput     `json:"Input"`        // 输入信息
+	Operation    JobOperation `json:"Operation"`    // 操作信息
+	Workflow     WorkflowInfo `json:"Workflow"`     // 工作流信息
 }
 
 // JobInput 输入信息
@@ -246,11 +246,11 @@ type JobInput struct {
 
 // JobOperation 操作信息
 type JobOperation struct {
-	TemplateId   string       `json:"TemplateId"`   // 模板ID
-	TemplateName string       `json:"TemplateName"` // 模板名称
-	Output       OutputConfig `json:"Output"`       // 输出配置
-	MediaResult  *MediaResult `json:"MediaResult"`  // 媒体处理结果
-	MediaInfo    *MediaInfo   `json:"MediaInfo"`    // 媒体信息（转码任务）
+	TemplateId              string        `json:"TemplateId"`              // 模板ID
+	TemplateName            string        `json:"TemplateName"`            // 模板名称
+	Output                  OutputConfig  `json:"Output"`                  // 输出配置
+	MediaResult             *MediaResult  `json:"MediaResult"`             // 媒体处理结果
+	MediaInfo               *MediaInfo    `json:"MediaInfo"`               // 媒体信息（转码任务）
 	SpeechRecognitionResult *SpeechResult `json:"SpeechRecognitionResult"` // 语音识别结果
 }
 

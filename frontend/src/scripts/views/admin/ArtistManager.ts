@@ -144,10 +144,10 @@ export default defineComponent({
 
           // 上传头像到艺术家专属路径
           const res = await axios.post('/api/v1/uploads/presign', {
+            upload_type: 'artist_avatar',
+            target_id: artistId,
             filename: avatarFile.value.name,
-            content_type: avatarFile.value.type,
-            upload_type: 'avatars',
-            artist_id: artistId
+            content_type: avatarFile.value.type
           });
           const { upload_url, object_key } = res.data.data;
           await axios.put(upload_url, avatarFile.value, {
@@ -171,10 +171,10 @@ export default defineComponent({
           // 编辑模式或没有新头像
           if (avatarFile.value) {
             const res = await axios.post('/api/v1/uploads/presign', {
+              upload_type: 'artist_avatar',
+              target_id: form.id,
               filename: avatarFile.value.name,
-              content_type: avatarFile.value.type,
-              upload_type: 'avatars',
-              artist_id: isEdit.value ? form.id : undefined
+              content_type: avatarFile.value.type
             });
             const { upload_url, object_key } = res.data.data;
             await axios.put(upload_url, avatarFile.value, {

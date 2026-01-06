@@ -55,6 +55,8 @@
         <el-form-item label="视频文件">
           <!-- Upload Logic (Simplified) -->
           <el-upload ref="videoUploadRef" class="upload-demo" action="#" :auto-upload="false" :limit="1"
+            accept="video/*"
+            :before-upload="beforeVideoUpload"
             :on-change="(file: any) => handleElFileChange(file, 'video')" :on-remove="() => handleElFileRemove('video')"
             :on-exceed="handleExceed" drag>
             <el-icon class="el-icon--upload"><upload-filled /></el-icon>
@@ -69,6 +71,8 @@
         </el-form-item>
         <el-form-item label="封面图片">
           <el-upload ref="avatarUploadRef" class="upload-demo" action="#" :auto-upload="false" :limit="1"
+            accept="image/*"
+            :before-upload="beforeAvatarUpload"
             :on-change="(file: any) => handleElFileChange(file, 'avatar')"
             :on-remove="() => handleElFileRemove('avatar')" :on-exceed="handleExceed" list-type="picture" drag>
             <el-icon class="el-icon--upload"><upload-filled /></el-icon>

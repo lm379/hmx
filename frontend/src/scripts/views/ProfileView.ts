@@ -180,11 +180,12 @@ export default defineComponent({
     };
 
     const uploadAvatar = async (): Promise<string> => {
-        if (!selectedAvatarFile.value) return '';
+        if (!selectedAvatarFile.value || !user.value) return '';
         
         // 1. Get Presigned URL
         const presignRes = await axios.post('/api/v1/uploads/presign', {
-            upload_type: 'avatars',
+            upload_type: 'user_avatar',
+            target_id: user.value.user_id,
             filename: selectedAvatarFile.value.name,
             content_type: selectedAvatarFile.value.type
         });

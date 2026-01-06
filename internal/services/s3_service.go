@@ -2,8 +2,11 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"path/filepath"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	aws_config "github.com/aws/aws-sdk-go-v2/config"
@@ -11,6 +14,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 	"github.com/lm379/hmx/config"
+	"github.com/lm379/hmx/internal/models"
+)
+
+// 定义权限错误
+var (
+	ErrPermissionDenied  = errors.New("permission denied")
+	ErrInvalidUploadType = errors.New("invalid upload type")
+	ErrOperaNotFound     = errors.New("opera not found")
 )
 
 var (
@@ -43,32 +54,61 @@ func InitS3(ctx context.Context, cfg config.Config) {
 }
 
 // GeneratePresignedUploadURL 生成预签名的 PUT URL
-// uploadType 建议为: "videos", "avatars", "covers"
-// useUUID 控制是否在文件名前添加 UUID 前缀
-func GeneratePresignedUploadURL(ctx context.Context, uploadType, filename, contentType string, useUUID bool) (string, string, error) {
+// uploadType: "user_avatar", "artist_avatar", "opera_cover", "video_upload"
+// userID: 当前登录用户的ID（从JWT获取）
+// userRole: 当前用户的角色（从JWT获取）
+// targetID: 目标资源ID（用户ID、艺术家ID、曲目ID等），video_upload时可为0
+// filename: 文件名
+// contentType: 文件类型
+func GeneratePresignedUploadURL(ctx context.Context, uploadType string, userID uint, userRole models.UserRole, targetID uint, filename, contentType string) (string, string, error) {
 	cfg := config.AppConfig
 
-	var basePath string
-	switch uploadType {
-	case "avatars":
-		basePath = cfg.S3AvatarPath
-	case "videos":
-		basePath = cfg.S3VideoPath
-	default:
-		basePath = uploadType // Fallback to uploadType if not configured
-	}
-
-	// 生成唯一的文件路径 (Object Key)
 	var objectKey string
-	if useUUID {
-		// 添加 UUID 前缀以避免文件名冲突
-		ext := filepath.Ext(filename)
-		baseFilename := filename[:len(filename)-len(ext)]
-		objectKey = filepath.Join(basePath, (uuid.New().String() + "-" + baseFilename + ext))
-	} else {
-		// 将传入文件名中的路径部分去掉，只保留文件名
-		filename = filepath.Base(filename)
-		objectKey = filepath.Join(basePath, filename)
+	ext := filepath.Ext(filename)
+
+	switch uploadType {
+	case "user_avatar":
+		// 用户头像：只能上传到自己的目录
+		if targetID != userID {
+			return "", "", fmt.Errorf("%w: cannot upload to other user's avatar directory", ErrPermissionDenied)
+		}
+		// 路径: user/avatar/{userID}/uuid.ext
+		objectKey = filepath.Join("user", "avatar", strconv.FormatUint(uint64(userID), 10), uuid.New().String()+ext)
+
+	case "artist_avatar":
+		// 艺术家头像：需要管理员权限
+		if userRole != models.Administrator {
+			return "", "", fmt.Errorf("%w: administrator role required for artist avatar upload", ErrPermissionDenied)
+		}
+		// 路径: artists/avatar/{artistID}/uuid.ext
+		objectKey = filepath.Join("artists", "avatar", strconv.FormatUint(uint64(targetID), 10), uuid.New().String()+ext)
+
+	case "opera_cover":
+		// 视频封面：需要管理员权限
+		if userRole != models.Administrator {
+			return "", "", fmt.Errorf("%w: administrator role required for opera cover upload", ErrPermissionDenied)
+		}
+		// 路径: public/cover/{operaTitle}/{operaTitle}.ext
+		// 使用targetID作为operaID，从数据库获取曲目名
+		opera, err := GetOperaByID(targetID)
+		if err != nil {
+			return "", "", fmt.Errorf("%w: %v", ErrOperaNotFound, err)
+		}
+		// 路径: public/cover/{title}/{title}.ext
+		objectKey = filepath.Join("public", "cover", opera.OperaTitle, opera.OperaTitle+ext)
+
+	case "video_upload":
+		// 视频上传到tmp：需要管理员权限，上传后由腾讯云数据万象处理并回调
+		if userRole != models.Administrator {
+			return "", "", fmt.Errorf("%w: administrator role required for video upload", ErrPermissionDenied)
+		}
+		// 路径: tmp/{title}.{ext}
+		// filename 应该是前端传入的视频标题 + 扩展名，例如 "天仙配.mp4"
+		filename = filepath.Base(filename) // 移除路径部分，只保留文件名
+		objectKey = filepath.Join("tmp", filename)
+
+	default:
+		return "", "", ErrInvalidUploadType
 	}
 
 	// 创建 PutObject 请求

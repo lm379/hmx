@@ -49,12 +49,12 @@ export default defineComponent({
     const fetchArtists = async () => {
       try {
         const res = await axios.get('/api/v1/artists', {
-          params: { 
-              page: 1, 
-              page_size: 100,
-              // If backend supports filtering by name, add query here. 
-              // Currently backend returns list, frontend filtering might be needed if list is small,
-              // or rely on el-select filtering.
+          params: {
+            page: 1,
+            page_size: 100,
+            // If backend supports filtering by name, add query here. 
+            // Currently backend returns list, frontend filtering might be needed if list is small,
+            // or rely on el-select filtering.
           }
         });
         artistOptions.value = res.data.data.list;
@@ -78,9 +78,9 @@ export default defineComponent({
       form.avatar_path = '';
       form.artist_ids = [];
       form.is_hidden = false;
-      
-      if(videoUploadRef.value) videoUploadRef.value.clearFiles();
-      if(avatarUploadRef.value) avatarUploadRef.value.clearFiles();
+
+      if (videoUploadRef.value) videoUploadRef.value.clearFiles();
+      if (avatarUploadRef.value) avatarUploadRef.value.clearFiles();
       videoFile.value = null;
       avatarFile.value = null;
 
@@ -96,9 +96,9 @@ export default defineComponent({
       form.avatar_path = '';
       form.artist_ids = row.artists.map((a: any) => a.artist_id);
       form.is_hidden = row.is_hidden;
-      
-      if(videoUploadRef.value) videoUploadRef.value.clearFiles();
-      if(avatarUploadRef.value) avatarUploadRef.value.clearFiles();
+
+      if (videoUploadRef.value) videoUploadRef.value.clearFiles();
+      if (avatarUploadRef.value) avatarUploadRef.value.clearFiles();
       videoFile.value = null;
       avatarFile.value = null;
 
@@ -137,6 +137,18 @@ export default defineComponent({
     const handleElFileChange = (file: UploadFile, type: string) => {
       if (file.raw) {
         if (type === 'video') {
+          // 验证视频文件类型
+          if (!file.raw.type.startsWith('video/')) {
+            ElMessage.error('只能上传视频文件！');
+            if (videoUploadRef.value) videoUploadRef.value.clearFiles();
+            return;
+          }
+          const maxSize = 4 * 1024 * 1024 * 1024; // 4GB
+          if (file.raw.size > maxSize) {
+            ElMessage.error('视频文件大小不能超过 4GB！');
+            if (videoUploadRef.value) videoUploadRef.value.clearFiles();
+            return;
+          }
           videoFile.value = file.raw;
           // If title is empty, auto-fill with filename (without extension)
           if (!form.title) {
@@ -144,7 +156,21 @@ export default defineComponent({
             form.title = name;
           }
         }
-        if (type === 'avatar') avatarFile.value = file.raw;
+        if (type === 'avatar') {
+          // 验证图片文件类型
+          if (!file.raw.type.startsWith('image/')) {
+            ElMessage.error('只能上传图片文件！');
+            if (avatarUploadRef.value) avatarUploadRef.value.clearFiles();
+            return;
+          }
+          const maxSize = 5 * 1024 * 1024; // 5MB
+          if (file.raw.size > maxSize) {
+            ElMessage.error('图片文件大小不能超过 5MB！');
+            if (avatarUploadRef.value) avatarUploadRef.value.clearFiles();
+            return;
+          }
+          avatarFile.value = file.raw;
+        }
       }
     };
 
@@ -155,6 +181,33 @@ export default defineComponent({
 
     const handleExceed: UploadProps['onExceed'] = () => {
       ElMessage.warning(`限制选择 1 个文件，请先移除旧文件`);
+    };
+
+    const beforeVideoUpload: UploadProps['beforeUpload'] = (rawFile) => {
+      if (!rawFile.type.startsWith('video/')) {
+        ElMessage.error('只能上传视频文件！');
+        return false;
+      }
+      // Optional: Add file size limit (e.g., 500MB)
+      const maxSize = 4 * 1024 * 1024 * 1024; // 4GB
+      if (rawFile.size > maxSize) {
+        ElMessage.error('视频文件大小不能超过 4GB！');
+        return false;
+      }
+      return true;
+    };
+
+    const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
+      if (!rawFile.type.startsWith('image/')) {
+        ElMessage.error('只能上传图片文件！');
+        return false;
+      }
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (rawFile.size > maxSize) {
+        ElMessage.error('图片文件大小不能超过 5MB！');
+        return false;
+      }
+      return true;
     };
 
     const handlePaste = (event: ClipboardEvent) => {
@@ -179,15 +232,33 @@ export default defineComponent({
       }
     };
 
-    const uploadFile = async (file: File, type: string, customFilename?: string) => {
+    const uploadFile = async (file: File, type: string, customFilename?: string, operaId?: number) => {
       const filename = customFilename || file.name;
+
+      let uploadType: string;
+      let targetId: number;
+
+      if (type === 'video') {
+        // 视频上传到 /tmp 不需要 opera_id
+        uploadType = 'video_upload';
+        targetId = 0; // video_upload 不需要 targetId，传0
+      } else {
+        // 封面上传需要 opera_id
+        if (!operaId) {
+          throw new Error('Opera ID is required for cover upload');
+        }
+        uploadType = 'opera_cover';
+        targetId = operaId;
+      }
+
       const res = await axios.post('/api/v1/uploads/presign', {
+        upload_type: uploadType,
+        target_id: targetId,
         filename: filename,
-        content_type: file.type,
-        upload_type: type === 'video' ? 'videos' : 'avatars'
+        content_type: file.type
       });
       const { upload_url, object_key } = res.data.data;
-      
+
       await axios.put(upload_url, file, {
         headers: { 'Content-Type': file.type },
         onUploadProgress: (progressEvent) => {
@@ -202,7 +273,7 @@ export default defineComponent({
           }
         }
       });
-      
+
       return object_key;
     };
 
@@ -213,47 +284,78 @@ export default defineComponent({
       try {
         let vPath = form.video_path;
         let aPath = form.avatar_path;
-        
+
         if (!isEdit.value && !videoFile.value) {
           ElMessage.error("请选择视频文件");
           submitting.value = false;
           return;
         }
 
-        if (videoFile.value) {
-          const ext = videoFile.value.name.split('.').pop();
-          const videoFilename = ext ? `${form.title}.${ext}` : form.title;
-          vPath = await uploadFile(videoFile.value, 'video', videoFilename);
-        }
-        if (avatarFile.value) {
-          aPath = await uploadFile(avatarFile.value, 'avatar');
-        }
-
         // Separate IDs and new names
         const artistIDs: number[] = [];
         const newArtistNames: string[] = [];
         form.artist_ids.forEach(val => {
-            if (typeof val === 'number') {
-                artistIDs.push(val);
-            } else {
-                newArtistNames.push(val);
-            }
+          if (typeof val === 'number') {
+            artistIDs.push(val);
+          } else {
+            newArtistNames.push(val);
+          }
         });
 
-        const data = {
-          title: form.title,
-          description: form.description,
-          video_path: vPath,
-          avatar_path: aPath,
-          artist_ids: artistIDs,
-          new_artist_names: newArtistNames,
-          is_hidden: form.is_hidden
-        };
+        if (!isEdit.value) {
+          // 新建模式：先上传视频到tmp，然后创建Opera并上传封面
 
-        if (isEdit.value) {
-          await axios.put(`/api/v1/admin/operas/${form.id}`, data);
+          // 上传视频到 tmp（不需要opera_id）
+          if (videoFile.value) {
+            const ext = videoFile.value.name.split('.').pop();
+            const videoFilename = ext ? `${form.title}.${ext}` : form.title;
+            vPath = await uploadFile(videoFile.value, 'video', videoFilename);
+          }
+
+          // 创建Opera（使用上传后的视频路径）
+          const createRes = await axios.post('/api/v1/operas/', {
+            title: form.title,
+            description: form.description,
+            video_path: vPath,
+            avatar_path: '',
+            artist_ids: artistIDs,
+            new_artist_names: newArtistNames,
+            is_hidden: form.is_hidden
+          });
+
+          const operaId = createRes.data.data.opera_id;
+
+          // 上传封面（如果有）
+          if (avatarFile.value) {
+            aPath = await uploadFile(avatarFile.value, 'cover', undefined, operaId);
+            // 更新Opera的封面路径
+            await axios.put(`/api/v1/admin/operas/${operaId}`, {
+              avatar_path: aPath
+            });
+          }
+
         } else {
-          await axios.post('/api/v1/operas/', data);
+          // 编辑模式：视频上传到tmp，封面需要opera_id
+          if (videoFile.value) {
+            const ext = videoFile.value.name.split('.').pop();
+            const videoFilename = ext ? `${form.title}.${ext}` : form.title;
+            vPath = await uploadFile(videoFile.value, 'video', videoFilename);
+          }
+          if (avatarFile.value) {
+            aPath = await uploadFile(avatarFile.value, 'cover', undefined, form.id);
+          }
+
+          const data = {
+            title: form.title,
+            description: form.description,
+            video_path: vPath,
+            avatar_path: aPath,
+            artist_ids: artistIDs,
+            new_artist_names: newArtistNames,
+            is_hidden: form.is_hidden
+          };
+
+          await axios.put(`/api/v1/admin/operas/${form.id}`, data);
         }
 
         ElMessage.success(isEdit.value ? '更新成功' : '创建成功');
@@ -296,6 +398,8 @@ export default defineComponent({
       handleElFileChange,
       handleElFileRemove,
       handleExceed,
+      beforeVideoUpload,
+      beforeAvatarUpload,
       handlePaste,
       submitForm,
       videoFile,
