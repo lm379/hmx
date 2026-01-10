@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lm379/hmx/internal/repository"
 	"github.com/lm379/hmx/internal/services"
 	"github.com/lm379/hmx/pkg/pagination"
 	resp "github.com/lm379/hmx/pkg/response"
@@ -161,11 +160,34 @@ func HandleGenerateEmbedding(c *gin.Context) {
 		return
 	}
 
-	// 异步生成向量
-	go services.GenerateOperaEmbedding(uint(operaID))
+	// 获取请求体（可选force参数）
+	var req struct {
+		Force bool `json:"force"` // 是否强制重新生成
+	}
+	c.ShouldBindJSON(&req)
+
+	// 如果不是强制生成，检查是否已有向量
+	if !req.Force {
+		opera, err := services.GetOperaByID(uint(operaID))
+		if err == nil {
+			slice := opera.Embedding.Slice()
+			if len(slice) > 0 {
+				resp.NoContentWithMsg(c, "Embedding already exists")
+				return
+			}
+		}
+	}
+
+	// 将任务加入队列（异步）
+	batchID, _, err := services.BatchGenerateEmbeddingsAsync([]uint{uint(operaID)}, req.Force)
+	if err != nil {
+		resp.Error(c, http.StatusInternalServerError, "Failed to start embedding generation: "+err.Error())
+		return
+	}
 
 	resp.Success(c, gin.H{
 		"message":  "Embedding generation started",
+		"task_id":  batchID,
 		"opera_id": operaID,
 	})
 }
@@ -174,6 +196,7 @@ func HandleGenerateEmbedding(c *gin.Context) {
 func HandleBatchGenerateEmbeddings(c *gin.Context) {
 	var req struct {
 		OperaIDs []uint `json:"opera_ids"`
+		Force    bool   `json:"force"` // 是否强制重新生成
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -186,20 +209,20 @@ func HandleBatchGenerateEmbeddings(c *gin.Context) {
 		return
 	}
 
-	operaRepo := repository.NewOperaRepo()
+	batchID, total, err := services.BatchGenerateEmbeddingsAsync(req.OperaIDs, req.Force)
+	if err != nil {
+		resp.InternalServerError(c, "Failed to start batch task: "+err.Error())
+		return
+	}
 
-	count := 0
-	for _, operaID := range req.OperaIDs {
-		opera, err := operaRepo.GetByID(operaID)
-		if err != nil {
-			continue
-		}
-		go services.GenerateOperaEmbedding(opera.OperaID)
-		count++
+	if total == 0 {
+		resp.NoContentWithMsg(c, "All operas already have embeddings")
+		return
 	}
 
 	resp.Success(c, gin.H{
-		"message": "Batch embedding generation started",
-		"total":   count,
+		"message":  "Batch embedding generation started",
+		"batch_id": batchID,
+		"total":    total,
 	})
 }

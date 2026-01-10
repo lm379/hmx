@@ -103,6 +103,12 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			admin.POST("/operas/batch-embedding", HandleBatchGenerateEmbeddings)   // 批量生成向量
 			admin.POST("/operas/:id/generate-summary", HandleGenerateOperaSummary) // 生成单个AI摘要
 			admin.POST("/operas/batch-summary", HandleBatchGenerateOperaSummaries) // 批量生成AI摘要
+
+			// 任务状态查询
+			admin.GET("/tasks/batch/:id", HandleGetBatchTaskStatus) // 获取批量任务状态
+			admin.GET("/tasks/:id", HandleGetTaskStatus)            // 获取单个任务状态
+			admin.GET("/tasks/queue/status", HandleGetQueueStatus)  // 获取队列状态
+
 			admin.GET("/artists", HandleGetArtists)
 			admin.POST("/artists", HandleAdminCreateArtist)
 			admin.PUT("/artists/:id", HandleAdminUpdateArtist)
@@ -117,6 +123,18 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 	if staticFiles != nil {
 		staticFS, err := fs.Sub(staticFiles, "static")
 		if err == nil {
+			// 提供 js 目录下的静态资源
+			jsFS, err := fs.Sub(staticFS, "js")
+			if err == nil {
+				r.StaticFS("/js", http.FS(jsFS))
+			}
+
+			// 提供 css 目录下的静态资源
+			cssFS, err := fs.Sub(staticFS, "css")
+			if err == nil {
+				r.StaticFS("/css", http.FS(cssFS))
+			}
+
 			// 提供 assets 目录下的静态资源
 			assetsFS, err := fs.Sub(staticFS, "assets")
 			if err == nil {

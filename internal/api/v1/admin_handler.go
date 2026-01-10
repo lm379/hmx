@@ -215,6 +215,12 @@ func HandleGenerateOperaSummary(c *gin.Context) {
 		return
 	}
 
+	// 获取请求体（可选force参数）
+	var req struct {
+		Force bool `json:"force"` // 是否强制重新生成
+	}
+	c.ShouldBindJSON(&req)
+
 	// 获取作品
 	opera, err := services.GetOperaByID(uint(operaID))
 	if err != nil {
@@ -228,16 +234,23 @@ func HandleGenerateOperaSummary(c *gin.Context) {
 		return
 	}
 
-	// 生成AI摘要（同步）
-	summary, err := services.GenerateOperaSummarySync(uint(operaID), opera.SrtPath.String)
+	// 如果不是强制生成且已有摘要,返回204
+	if !req.Force && opera.AiSummary != "" {
+		resp.NoContentWithMsg(c, "Summary already exists")
+		return
+	}
+
+	// 将任务加入队列（异步）
+	batchID, _, err := services.BatchGenerateOperaSummariesAsync([]uint{uint(operaID)}, req.Force)
 	if err != nil {
-		resp.InternalServerError(c, "Failed to generate summary: "+err.Error())
+		resp.InternalServerError(c, "Failed to start summary generation: "+err.Error())
 		return
 	}
 
 	resp.Success(c, gin.H{
-		"message": "Summary generated successfully",
-		"summary": summary,
+		"message":  "Summary generation started",
+		"task_id":  batchID,
+		"opera_id": operaID,
 	})
 }
 
@@ -245,6 +258,7 @@ func HandleGenerateOperaSummary(c *gin.Context) {
 func HandleBatchGenerateOperaSummaries(c *gin.Context) {
 	var req struct {
 		OperaIDs []uint `json:"opera_ids"`
+		Force    bool   `json:"force"` // 是否强制重新生成
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -257,18 +271,20 @@ func HandleBatchGenerateOperaSummaries(c *gin.Context) {
 		return
 	}
 
-	total := services.BatchGenerateOperaSummariesAsync(req.OperaIDs)
+	batchID, total, err := services.BatchGenerateOperaSummariesAsync(req.OperaIDs, req.Force)
+	if err != nil {
+		resp.InternalServerError(c, "Failed to start batch task: "+err.Error())
+		return
+	}
 
 	if total == 0 {
-		resp.Success(c, gin.H{
-			"message": "No operas need summary generation",
-			"total":   0,
-		})
+		resp.NoContentWithMsg(c, "All operas already have summaries")
 		return
 	}
 
 	resp.Success(c, gin.H{
-		"message": "Batch summary generation started",
-		"total":   total,
+		"message":  "Batch summary generation started",
+		"batch_id": batchID,
+		"total":    total,
 	})
 }

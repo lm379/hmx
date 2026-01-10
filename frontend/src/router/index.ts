@@ -1,68 +1,54 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
-import LoginView from '../views/LoginView.vue';
-import RegisterView from '../views/RegisterView.vue';
-import ForgetPasswordView from '../views/ForgetPasswordView.vue';
-import ProfileView from '../views/ProfileView.vue';
-import ArtistListView from '../views/ArtistListView.vue';
-import PlayView from '../views/PlayView.vue';
-import ArtistProfileView from '../views/ArtistProfileView.vue';
-import NotFound from '../views/NotFound.vue';
-import AdminLayout from '../views/admin/AdminLayout.vue';
-import DashboardView from '../views/admin/DashboardView.vue';
-import VideoManager from '../views/admin/VideoManager.vue';
-import ArtistManager from '../views/admin/ArtistManager.vue';
-import UserManager from '../views/admin/UserManager.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Home',
-    component: HomeView,
+    component: () => import('../views/HomeView.vue'),
     meta: { showCategoryBar: true }
   },
   {
     path: '/login',
     name: 'Login',
-    component: LoginView
+    component: () => import('../views/LoginView.vue')
   },
   {
     path: '/register',
     name: 'Register',
-    component: RegisterView
+    component: () => import('../views/RegisterView.vue')
   },
   {
     path: '/forget-password',
     name: 'ForgetPassword',
-    component: ForgetPasswordView
+    component: () => import('../views/ForgetPasswordView.vue')
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: ProfileView,
+    component: () => import('../views/ProfileView.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/artists',
     name: 'Artists',
-    component: ArtistListView,
+    component: () => import('../views/ArtistListView.vue'),
     meta: { showCategoryBar: true }
   },
   {
     path: '/artist/:id',
     name: 'ArtistProfile',
-    component: ArtistProfileView
+    component: () => import('../views/ArtistProfileView.vue')
   },
   {
     path: '/video/:id',
     name: 'Play',
-    component: PlayView,
+    component: () => import('../views/PlayView.vue'),
     meta: { showCategoryBar: true }
   },
   {
     path: '/admin',
-    component: AdminLayout,
+    component: () => import('../views/admin/AdminLayout.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       {
@@ -72,29 +58,34 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'dashboard',
         name: '仪表盘',
-        component: DashboardView
+        component: () => import('../views/admin/DashboardView.vue')
       },
       {
         path: 'videos',
         name: '视频管理',
-        component: VideoManager
+        component: () => import('../views/admin/VideoManager.vue')
       },
       {
         path: 'artists',
         name: '艺术家管理',
-        component: ArtistManager
+        component: () => import('../views/admin/ArtistManager.vue')
       },
       {
         path: 'users',
         name: '用户管理',
-        component: UserManager
+        component: () => import('../views/admin/UserManager.vue')
+      },
+      {
+        path: 'tasks',
+        name: '任务队列',
+        component: () => import('../views/admin/TaskQueueView.vue')
       }
     ]
   },
   {
     path: '/404',
     name: 'NotFound',
-    component: NotFound
+    component: () => import('../views/NotFound.vue')
   },
   {
     path: '/:pathMatch(.*)*',

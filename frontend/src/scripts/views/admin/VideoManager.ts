@@ -14,9 +14,10 @@ export default defineComponent({
     const avatarUploadRef = ref<UploadInstance>();
     const videoProgress = ref(0);
     const avatarProgress = ref(0);
+    const selectedRows = ref<any[]>([]);
+    const forceRegenerate = ref(false); // 强制重新生成
     const batchEmbeddingLoading = ref(false);
     const batchSummaryLoading = ref(false);
-    const selectedRows = ref<any[]>([]);
 
     const dialogVisible = ref(false);
     const isEdit = ref(false);
@@ -142,8 +143,14 @@ export default defineComponent({
     const handleGenerateEmbedding = async (row: any) => {
       row._embeddingLoading = true;
       try {
-        const res = await axios.post(`/api/v1/admin/operas/${row.opera_id}/embedding`);
-        ElMessage.success(res.data.message || '向量生成成功');
+        const res = await axios.post(`/api/v1/admin/operas/${row.opera_id}/embedding`, {
+          force: forceRegenerate.value
+        });
+        if (res.status === 204) {
+          ElMessage.info(res.data?.msg || '向量已存在，无需重新生成');
+        } else {
+          ElMessage.success(res.data.message || '向量生成已开始');
+        }
         fetchData();
       } catch (e: any) {
         ElMessage.error(e.response?.data?.message || '向量生成失败');
@@ -160,8 +167,14 @@ export default defineComponent({
       }
       row._summaryLoading = true;
       try {
-        const res = await axios.post(`/api/v1/admin/operas/${row.opera_id}/generate-summary`);
-        ElMessage.success(res.data.message || 'AI摘要生成成功');
+        const res = await axios.post(`/api/v1/admin/operas/${row.opera_id}/generate-summary`, {
+          force: forceRegenerate.value
+        });
+        if (res.status === 204) {
+          ElMessage.info(res.data?.msg || 'AI摘要已存在，无需重新生成');
+        } else {
+          ElMessage.success(res.data.message || 'AI摘要生成已开始');
+        }
         fetchData();
       } catch (e: any) {
         ElMessage.error(e.response?.data?.message || 'AI摘要生成失败');
@@ -176,7 +189,7 @@ export default defineComponent({
         ElMessage.warning('请先选择要生成向量的视频');
         return;
       }
-      
+
       const ids = selectedRows.value.map(row => row.opera_id);
       ElMessageBox.confirm(`确定要为选中的 ${ids.length} 个视频生成向量吗？这可能需要一些时间。`, '提示', {
         type: 'warning',
@@ -185,10 +198,16 @@ export default defineComponent({
       }).then(async () => {
         batchEmbeddingLoading.value = true;
         try {
-          const res = await axios.post('/api/v1/admin/operas/batch-embedding', { opera_ids: ids });
-          const data = res.data.data;
-          ElMessage.success(`批量生成已开始！共 ${data.total} 个视频`);
-          fetchData();
+          const res = await axios.post('/api/v1/admin/operas/batch-embedding', { 
+            opera_ids: ids,
+            force: forceRegenerate.value 
+          });
+          if (res.status === 204) {
+            ElMessage.info(res.data?.msg || '所有视频的向量已存在，无需重新生成');
+          } else {
+            const data = res.data.data;
+            ElMessage.success(`批量生成已开始！共 ${data.total} 个视频`);
+          }
         } catch (e: any) {
           ElMessage.error(e.response?.data?.message || '批量生成失败');
         } finally {
@@ -205,15 +224,15 @@ export default defineComponent({
         ElMessage.warning('请先选择要生成AI摘要的视频');
         return;
       }
-      
+
       const ids = selectedRows.value.map(row => row.opera_id);
       const withSubtitle = selectedRows.value.filter(row => row.srt_path).length;
-      
+
       if (withSubtitle === 0) {
         ElMessage.warning('所选视频中没有包含字幕的视频');
         return;
       }
-      
+
       ElMessageBox.confirm(`确定要为选中的 ${ids.length} 个视频生成AI摘要吗（其中 ${withSubtitle} 个有字幕）？这可能需要较长时间。`, '提示', {
         type: 'warning',
         confirmButtonText: '确定',
@@ -221,10 +240,16 @@ export default defineComponent({
       }).then(async () => {
         batchSummaryLoading.value = true;
         try {
-          const res = await axios.post('/api/v1/admin/operas/batch-summary', { opera_ids: ids });
-          const data = res.data.data;
-          ElMessage.success(`批量生成已开始！共 ${data.total} 个视频`);
-          fetchData();
+          const res = await axios.post('/api/v1/admin/operas/batch-summary', { 
+            opera_ids: ids,
+            force: forceRegenerate.value 
+          });
+          if (res.status === 204) {
+            ElMessage.info(res.data?.msg || '所有视频的AI摘要已存在，无需重新生成');
+          } else {
+            const data = res.data.data;
+            ElMessage.success(`批量生成已开始！共 ${data.total} 个视频`);
+          }
         } catch (e: any) {
           ElMessage.error(e.response?.data?.message || '批量生成失败');
         } finally {
@@ -514,7 +539,8 @@ export default defineComponent({
       handlePaste,
       submitForm,
       videoFile,
-      avatarFile
+      avatarFile,
+      forceRegenerate
     };
   }
 });

@@ -3,7 +3,8 @@
     <div class="toolbar">
       <el-button type="primary" @click="handleCreate">上传视频</el-button>
       <el-button type="success" @click="handleBatchGenerateEmbedding" :loading="batchEmbeddingLoading">批量生成向量</el-button>
-      <el-button type="warning" @click="handleBatchGenerateSummary" :loading="batchSummaryLoading">批量生成AI摘要</el-button>
+      <el-button type="warning" @click="handleBatchGenerateSummary" :loading="batchSummaryLoading">批量AI摘要</el-button>
+      <el-checkbox v-model="forceRegenerate" style="margin-left: 10px;">强制重新生成</el-checkbox>
     </div>
 
     <el-table :data="tableData" style="width: 100%" v-loading="loading" @selection-change="handleSelectionChange">

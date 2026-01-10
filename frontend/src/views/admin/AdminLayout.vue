@@ -17,6 +17,12 @@
             </el-icon>
             <span>视频管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/tasks">
+            <el-icon>
+              <List />
+            </el-icon>
+            <span>任务队列</span>
+          </el-menu-item>
           <el-menu-item index="/admin/artists">
             <el-icon>
               <User />
@@ -70,7 +76,20 @@
 
 <script lang="ts">
 import AdminLayoutScript from '../../scripts/views/admin/AdminLayout';
-export default AdminLayoutScript;
+import { DataLine, VideoCamera, User, UserFilled, HomeFilled, CaretBottom, List } from '@element-plus/icons-vue';
+
+export default {
+  ...AdminLayoutScript,
+  components: {
+    DataLine,
+    VideoCamera,
+    User,
+    UserFilled,
+    HomeFilled,
+    CaretBottom,
+    List
+  }
+};
 </script>
 
 <style scoped src="../../styles/views/admin/AdminLayout.css"></style>

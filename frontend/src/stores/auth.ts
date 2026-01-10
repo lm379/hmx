@@ -22,6 +22,20 @@ export const useAuthStore = defineStore('auth', () => {
       (error) => Promise.reject(error)
     );
 
+    let isRefreshing = false;
+    let requestsQueue: { resolve: Function, reject: Function }[] = [];
+
+    const processQueue = (error: any, token: string | null = null) => {
+      requestsQueue.forEach(prom => {
+        if (error) {
+          prom.reject(error);
+        } else {
+          prom.resolve(token);
+        }
+      });
+      requestsQueue = [];
+    };
+
     // 响应拦截器：处理 401 错误，自动刷新 token
     axios.interceptors.response.use(
       (response) => response,
@@ -36,7 +50,22 @@ export const useAuthStore = defineStore('auth', () => {
 
         // 如果是 401 错误且不是刷新 token 请求，尝试刷新
         if (error.response?.status === 401 && !originalRequest._retry) {
+          if (isRefreshing) {
+            return new Promise((resolve, reject) => {
+              requestsQueue.push({
+                resolve: (token: string) => {
+                  originalRequest.headers.Authorization = `Bearer ${token}`;
+                  resolve(axios(originalRequest));
+                },
+                reject: (err: any) => {
+                  reject(err);
+                }
+              });
+            });
+          }
+
           originalRequest._retry = true;
+          isRefreshing = true;
 
           const refreshToken = localStorage.getItem('refresh_token');
           if (refreshToken) {
@@ -50,14 +79,20 @@ export const useAuthStore = defineStore('auth', () => {
                 localStorage.setItem('access_token', access_token);
                 localStorage.setItem('refresh_token', refresh_token);
 
+                // 处理队列中的请求
+                processQueue(null, access_token);
+
                 // 重试原始请求
                 originalRequest.headers.Authorization = `Bearer ${access_token}`;
                 return axios(originalRequest);
               }
             } catch (refreshError) {
               // 刷新失败，清除所有 token
+              processQueue(refreshError, null);
               logout();
               return Promise.reject(refreshError);
+            } finally {
+              isRefreshing = false;
             }
           } else {
             logout();

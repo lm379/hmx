@@ -10,8 +10,9 @@ import (
 	"time"
 
 	"github.com/lm379/hmx/config"
-	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/internal/queue"
 	"github.com/lm379/hmx/internal/repository"
+	"github.com/lm379/hmx/pkg/ai"
 )
 
 // OpenAI Embedding API 请求和响应结构
@@ -211,7 +212,7 @@ func GenerateOperaEmbedding(operaID uint) {
 	}
 
 	// 调用 Embedding API 生成向量
-	embedding, err := GenerateEmbedding(text)
+	embedding, err := ai.GenerateEmbedding(text)
 	if err != nil {
 		log.Printf("[AI Embedding] 错误: 生成向量失败 (Opera ID %d): %v", operaID, err)
 		return
@@ -361,51 +362,80 @@ func readSubtitleFromCDN(srtPath string) (string, error) {
 }
 
 // BatchGenerateOperaSummariesAsync 批量生成作品AI摘要（异步执行）
-func BatchGenerateOperaSummariesAsync(operaIDs []uint) int {
+// force: 是否强制重新生成，如果为false则在入队前过滤已生成的
+func BatchGenerateOperaSummariesAsync(operaIDs []uint, force bool) (string, int, error) {
 	if len(operaIDs) == 0 {
-		return 0
+		return "", 0, nil
 	}
 
-	operaRepo := repository.NewOperaRepo()
+	var validOperas []uint
 
-	// 获取指定的作品
-	operas := make([]models.Opera, 0)
-	for _, id := range operaIDs {
-		opera, err := operaRepo.GetByID(id)
-		if err != nil {
-			continue
-		}
-		// 过滤没有字幕的作品
-		if opera.SrtPath.Valid && opera.SrtPath.String != "" {
-			operas = append(operas, *opera)
-		}
-	}
-
-	total := len(operas)
-	if total == 0 {
-		return 0
-	}
-
-	log.Printf("[Batch Summary] 开始批量生成摘要，共 %d 个作品", total)
-
-	// 异步执行批量生成
-	go func() {
-		var success, failed int
-		for _, opera := range operas {
-			summary, err := GenerateOperaSummarySync(opera.OperaID, opera.SrtPath.String)
+	// 如果不是强制生成，需要先过滤已生成的
+	if !force {
+		operaRepo := repository.NewOperaRepo()
+		for _, id := range operaIDs {
+			opera, err := operaRepo.GetByID(id)
 			if err != nil {
-				failed++
-				log.Printf("[Batch Summary] 失败: Opera ID %d (%s): %v", opera.OperaID, opera.OperaTitle, err)
 				continue
 			}
-
-			// 成功生成摘要，不自动触发向量生成
-			_ = summary
-			success++
-			log.Printf("[Batch Summary] 成功: Opera ID %d (%s)", opera.OperaID, opera.OperaTitle)
+			// 只加入有字幕且没有摘要的
+			if opera.SrtPath.Valid && opera.SrtPath.String != "" && opera.AiSummary == "" {
+				validOperas = append(validOperas, id)
+			}
 		}
-		log.Printf("[Batch Summary] 批量生成完成: 成功 %d, 失败 %d", success, failed)
-	}()
 
-	return total
+		if len(validOperas) == 0 {
+			return "", 0, nil // 没有需要生成的
+		}
+	} else {
+		validOperas = operaIDs // 强制生成，不过滤
+	}
+
+	// 调用队列层进行入队
+	batchID, err := queue.BatchGenerateOperaSummariesAsync(validOperas, force)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return batchID, len(validOperas), nil
+}
+
+// BatchGenerateEmbeddingsAsync 批量生成向量（异步执行）
+// force: 是否强制重新生成，如果为false则在入队前过滤已生成的
+func BatchGenerateEmbeddingsAsync(operaIDs []uint, force bool) (string, int, error) {
+	if len(operaIDs) == 0 {
+		return "", 0, nil
+	}
+
+	var validOperas []uint
+
+	// 如果不是强制生成，需要先过滤已生成的
+	if !force {
+		operaRepo := repository.NewOperaRepo()
+		for _, id := range operaIDs {
+			opera, err := operaRepo.GetByID(id)
+			if err != nil {
+				continue
+			}
+			// 只加入没有向量的
+			slice := opera.Embedding.Slice()
+			if len(slice) == 0 {
+				validOperas = append(validOperas, id)
+			}
+		}
+
+		if len(validOperas) == 0 {
+			return "", 0, nil // 没有需要生成的
+		}
+	} else {
+		validOperas = operaIDs // 强制生成，不过滤
+	}
+
+	// 调用队列层进行入队
+	batchID, err := queue.BatchGenerateEmbeddingsAsync(validOperas, force)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return batchID, len(validOperas), nil
 }

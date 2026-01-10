@@ -18,6 +18,7 @@ var (
 	RDBToken      *redis.Client // Refresh Token Redis 客户端（0号DB）
 	RDBVerifyCode *redis.Client // 验证码 Redis 客户端（1号DB）
 	RDBCache      *redis.Client // 缓存 Redis 客户端（2号DB）
+	RDBQueue      *redis.Client // 消息队列 Redis 客户端（3号DB）
 	Ctx           = context.Background()
 )
 
@@ -95,6 +96,18 @@ func InitRedis() {
 		log.Fatalf("Failed to connect to Redis DB 2 (Cache): %v", err)
 	}
 	log.Println("Redis DB 2 (Cache) connection established.")
+
+	// 3号DB: 消息队列
+	RDBQueue = redis.NewClient(&redis.Options{
+		Addr:     config.AppConfig.RedisAddr,
+		Password: config.AppConfig.RedisPass,
+		DB:       3,
+	})
+	_, err = RDBQueue.Ping(Ctx).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis DB 3 (Queue): %v", err)
+	}
+	log.Println("Redis DB 3 (Queue) connection established.")
 
 	// 默认客户端指向 0号DB
 	RDB = RDBToken
