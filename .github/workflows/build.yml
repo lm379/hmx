@@ -1,0 +1,180 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号（留空默认为 beta）'
+        required: false
+        default: 'beta'
+        type: string
+
+permissions:
+  contents: write 
+
+jobs:
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-static
+          path: cmd/server/static/
+          retention-days: 1
+
+  build:
+    name: Build Go Binary
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: cmd/server/static
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          # 设置输出文件名
+          OUTPUT_NAME="hmx-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            OUTPUT_NAME="${OUTPUT_NAME}.exe"
+          fi
+          
+          # 编译
+          go build \
+            -ldflags="-s -w -X main.Version=${{ github.ref_name }} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o "$OUTPUT_NAME" \
+            ./cmd/server/main.go
+          
+          # 压缩二进制文件
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip "${OUTPUT_NAME%.exe}.zip" "$OUTPUT_NAME"
+          else
+            tar czf "${OUTPUT_NAME}.tar.gz" "$OUTPUT_NAME"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hmx-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            *.tar.gz
+            *.zip
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # 获取最新的提交信息作为更新日志
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          if git describe --tags --abbrev=0 HEAD^ 2>/dev/null; then
+            git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> $GITHUB_OUTPUT
+          else
+            git log --pretty=format:"- %s" -10 >> $GITHUB_OUTPUT
+          fi
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          files: artifacts/*
+          body: |
+            ## 🚀 Release ${{ steps.version.outputs.version }}
+            
+            ### 📦 下载说明
+            - **Linux AMD64**: `hmx-linux-amd64.tar.gz`
+            - **Linux ARM64**: `hmx-linux-arm64.tar.gz`
+            - **macOS AMD64 (Intel)**: `hmx-darwin-amd64.tar.gz`
+            - **macOS ARM64 (Apple Silicon)**: `hmx-darwin-arm64.tar.gz`
+            - **Windows AMD64**: `hmx-windows-amd64.zip`
+            - **Windows ARM64**: `hmx-windows-arm64.zip`
+            
+            ### 📝 更新日志
+            ${{ steps.changelog.outputs.CHANGELOG }}
+            
+            ### 🔧 使用方法
+            1. 下载对应平台的压缩包
+            2. 解压缩文件
+            3. 运行 `./hmx` (Linux/macOS) 或 `hmx.exe` (Windows)
+            
+            ### ⚙️ 编译信息
+            - Go 版本: 1.24
+            - 构建时间: ${{ github.event.head_commit.timestamp }}
+            - Commit: ${{ github.sha }}
+          draft: false
+          prerelease: ${{ steps.version.outputs.is_prerelease }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
