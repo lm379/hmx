@@ -14,6 +14,7 @@ export interface SimpleOpera {
     play_count: number;
     like_count: number;
     created_at: string;
+    ai_summary?: string;
 }
 
 // 列表页的作品信息（简化版）
@@ -27,6 +28,7 @@ export interface OperaListItem {
     play_count: number;
     like_count: number;
     created_at: string;
+    ai_summary?: string;
 }
 
 // 详情页的作品信息（完整版）

@@ -36,6 +36,79 @@ export default defineComponent({
     const submittingComment = ref(false);
     const showEmojiPicker = ref(false);
 
+    // AI Summary Logic
+    const showAiSummary = ref(false);
+    const displayedAiSummary = ref('');
+    const showAiSearch = ref(false);
+    const aiSearchQuery = ref('');
+    let aiTypingInterval: number | null = null;
+
+    const toggleAiSummary = () => {
+      showAiSummary.value = !showAiSummary.value;
+      if (showAiSummary.value) {
+        startAiSummaryTyping();
+      } else {
+        if (aiTypingInterval) {
+          clearInterval(aiTypingInterval);
+          aiTypingInterval = null;
+        }
+        // Reset search state when closing card
+        showAiSearch.value = false;
+        aiSearchQuery.value = '';
+      }
+    };
+
+    const toggleAiSearch = () => {
+      showAiSearch.value = !showAiSearch.value;
+      if (!showAiSearch.value) {
+        aiSearchQuery.value = '';
+      } else {
+        // Focus input on next tick if possible (handled in template with autofocus or custom directive, or simple ref)
+      }
+    };
+
+    const highlightedAiSummary = computed(() => {
+      const text = displayedAiSummary.value;
+      const query = aiSearchQuery.value.trim();
+      
+      if (!query) return text;
+
+      // Escape special regex characters in query
+      const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${safeQuery})`, 'gi');
+      
+      // Simple HTML replacement for highlighting
+      // Note: This assumes original text doesn't contain HTML that conflicts.
+      return text.replace(regex, '<span class="highlight">$1</span>');
+    });
+
+    const startAiSummaryTyping = () => {
+      if (aiTypingInterval) {
+        clearInterval(aiTypingInterval);
+        aiTypingInterval = null;
+      }
+      displayedAiSummary.value = '';
+
+      const summary = opera.value?.ai_summary || '暂无AI总结内容。';
+      let currentIndex = 0;
+      
+      // Update every 50ms for smoother effect
+      aiTypingInterval = window.setInterval(() => {
+        if (currentIndex >= summary.length) {
+          if (aiTypingInterval) {
+            clearInterval(aiTypingInterval);
+            aiTypingInterval = null;
+          }
+          return;
+        }
+        
+        const count = Math.floor(Math.random() * 3) + 1; // 1 to 3 chars
+        const nextIndex = Math.min(currentIndex + count, summary.length);
+        displayedAiSummary.value += summary.slice(currentIndex, nextIndex);
+        currentIndex = nextIndex;
+      }, 50);
+    };
+
     const comments = ref<Comment[]>([]);
     const emojiList = [
       "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "☺️", "😚", "😙", "🥲", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🙈", "🙉", "🙊", "👍", "👎", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘", "👌", "🤏", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐", "🖖", "👋", "🤙", "💪", "🖕", "✍️", "🙏", "🦶", "🦵", "👂", "🦻", "👃", "🧠", "🦷", "🦴", "👀", "👁", "👅", "👄", "💋"
@@ -333,6 +406,9 @@ export default defineComponent({
       if (dp) {
         dp.destroy();
       }
+      if (aiTypingInterval) {
+        clearInterval(aiTypingInterval);
+      }
     });
 
     const formatTime = (time: string) => {
@@ -433,7 +509,14 @@ export default defineComponent({
       onToggleCommentLike,
       toggleReplyInput,
       postReply,
-      deleteComment
+      deleteComment,
+      showAiSummary,
+      displayedAiSummary,
+      toggleAiSummary,
+      showAiSearch,
+      aiSearchQuery,
+      toggleAiSearch,
+      highlightedAiSummary
     };
   }
 });

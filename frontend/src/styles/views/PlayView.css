@@ -96,6 +96,7 @@
 .toolbar-right {
   display: flex;
   gap: 24px;
+  align-items: center;
 }
 
 .action-item {
@@ -106,6 +107,7 @@
   color: #61666d;
   font-size: 14px;
   transition: color 0.2s;
+  position: relative;
 }
 
 .action-item:hover {
@@ -122,6 +124,247 @@
 
 .action-icon {
   font-size: 20px;
+}
+
+.ai-btn-content {
+    display: flex;
+    align-items: center;
+    background: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #18191c;
+    font-weight: 500;
+    font-size: 13px;
+    position: relative;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.ai-btn-content:hover {
+    background: #e3e5e7;
+}
+
+.ai-btn-container.active .ai-btn-content {
+    background: none;
+    color: #ae001f;
+    border-color: #ae000f;
+}
+
+.ai-icon {
+    margin-right: 4px;
+    font-size: 16px;
+}
+
+/* AI Card Overlay */
+.ai-card {
+    position: absolute;
+    bottom: calc(100% + 12px); /* Pop up above the button */
+    right: 0;
+    width: 360px;
+    background: white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    z-index: 1002;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    overflow: visible; /* Allow tooltip to overflow */
+    color: #18191c;
+}
+
+.ai-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f2f3;
+    height: 49px; /* Fixed height to prevent jump when switching to search input */
+    box-sizing: border-box;
+}
+
+.ai-card-title {
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.ai-icon-small {
+    font-size: 18px;
+}
+
+/* Info Icon & Tooltip */
+.info-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.info-icon {
+    font-size: 14px;
+    color: #9499a0;
+    cursor: help;
+    margin-left: 4px;
+}
+
+.ai-tooltip {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    z-index: 1010;
+    display: none;
+    text-align: left;
+    pointer-events: none; /* Prevent hovering strictly on it causing flicker if gap exists, usually safe */
+}
+
+.info-icon-wrapper:hover .ai-tooltip {
+    display: block;
+}
+
+.tooltip-title {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.tooltip-content p {
+    margin-bottom: 8px;
+    color: #eee;
+}
+
+.tooltip-footer {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    color: #aaa;
+}
+
+.ai-card-actions {
+    display: flex;
+    gap: 12px;
+    color: #61666d;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.search-icon, .close-icon {
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.2s;
+}
+
+.search-icon:hover, .close-icon:hover {
+    color: #18191c;
+}
+
+.search-icon.active {
+    color: #ae000f;
+}
+
+/* Search Input */
+.ai-search-container {
+    flex: 1;
+    margin-right: 12px;
+    margin-left: 12px;
+}
+
+.ai-search-input {
+    width: 40%;
+    float: right;
+    padding: 6px 12px;
+    border: 1px solid #e3e5e7;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+    color: #18191c;
+    transition: border-color 0.2s;
+}
+
+.ai-search-input:focus {
+    border-color: #ae000f;
+}
+
+.ai-card-tabs {
+    display: flex;
+    padding: 12px 16px;
+    gap: 16px;
+}
+
+.ai-tab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 0;
+    background: #f6f7f8;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #61666d;
+    cursor: pointer;
+}
+
+.ai-tab.active {
+    background: white;
+    color: #ae001f;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    font-weight: 500;
+}
+
+.ai-card-content {
+    padding: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #18191c;
+    background: #fcfcfc;
+}
+
+.ai-disclaimer {
+    font-size: 12px;
+    color: #c0c4cc; /* Lighter grey */
+    margin-bottom: 8px;
+    transform: scale(0.9); /* Make it visually smaller like 'small text' */
+    transform-origin: left top;
+}
+
+.ai-summary-text {
+    white-space: pre-wrap;
+    min-height: 100px;
+}
+
+/* Highlight style for search matches */
+:deep(.highlight) {
+    background-color: #fff3cd; /* Yellow highlight */
+    color: #18191c;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* Since highlight is injected via v-html, use deep selector if scoped, or global.
+   However, Vue scoped styles don't apply to v-html content automatically unless using :deep() */
+.ai-summary-text :deep(.highlight) {
+    background-color: #FFFF00;
+    color: #000;
+}
+
+.cursor {
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+    color: #ae0000;
+    font-weight: bold;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
 }
 
 /* Description */
@@ -383,10 +626,6 @@
     fill: currentColor;
 }
 
-.delete-btn {
-    /* Optional specific style for delete */
-}
-
 /* Reply Input */
 .reply-send-section {
     display: flex;
@@ -555,7 +794,7 @@
   color: #18191c;
   line-height: 20px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

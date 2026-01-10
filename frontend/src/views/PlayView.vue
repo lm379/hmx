@@ -49,6 +49,61 @@
               <span>{{ (opera.share_count || 0) }}</span>
             </div>
           </div>
+          
+          <div class="toolbar-right">
+             <div class="action-item ai-btn-container" @click="toggleAiSummary" :class="{ active: showAiSummary }">
+              <span class="ai-btn-content">
+                 <span class="ai-icon">🤖</span>
+                 <span class="ai-text">AI小助手</span>
+              </span>
+              
+              <!-- AI Assistant Card -->
+              <div class="ai-card" v-if="showAiSummary" @click.stop>
+                <div class="ai-card-header">
+                  <div class="ai-card-title">
+                    <span class="ai-icon-small">🤖</span> AI小助手 
+                    <div class="info-icon-wrapper">
+                        <span class="info-icon">ⓘ</span>
+                        <div class="ai-tooltip">
+                            <div class="tooltip-title">功能说明</div>
+                            <div class="tooltip-content">
+                                <p>· 我是AI视频总结小助手，为你提供视频总结服务。我当前暂只支持部分内容的视频总结，我正在不断学习更多内容的视频总结 ~</p>
+                                <p>· 总结内容尚不准确，仅供参考。希望能获得你的反馈，这将帮助我不断成长 ~</p>
+                            </div>
+                            <div class="tooltip-footer">由 DeepSeek 大模型提供技术支持</div>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="ai-search-container" v-if="showAiSearch">
+                     <input 
+                       type="text" 
+                       v-model="aiSearchQuery" 
+                       class="ai-search-input" 
+                       placeholder="搜索..." 
+                       @click.stop
+                       autofocus
+                     />
+                  </div>
+                  <div class="ai-card-actions">
+                     <span class="search-icon" @click.stop="toggleAiSearch" :class="{ active: showAiSearch }">🔍</span>
+                     <span class="close-icon" @click.stop="toggleAiSummary">✕</span>
+                  </div>
+                </div>
+                
+                <div class="ai-card-tabs">
+                   <div class="ai-tab active">视频总结</div>
+                </div>
+                
+                <div class="ai-card-content">
+                  <div class="ai-disclaimer">由AI生成，仅供参考</div>
+                  <div class="ai-summary-text">
+                    <span v-html="highlightedAiSummary"></span>
+                    <span class="cursor" v-if="displayedAiSummary.length < (opera.ai_summary || '').length">|</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Description -->
