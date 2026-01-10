@@ -10,10 +10,62 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lm379/hmx/internal/models"
 	"github.com/lm379/hmx/internal/repository"
+	"github.com/lm379/hmx/pkg/converter"
 	"github.com/lm379/hmx/pkg/pagination"
 )
 
 var operaRepo = repository.NewOperaRepo()
+
+// OperaService 作品服务
+type OperaService struct {
+	operaRepo       *repository.OperaRepo
+	interactionRepo *repository.InteractionRepo
+}
+
+// NewOperaService 创建作品服务实例
+func NewOperaService() *OperaService {
+	return &OperaService{
+		operaRepo:       repository.NewOperaRepo(),
+		interactionRepo: repository.NewInteractionRepo(),
+	}
+}
+
+// GetAllOperas 获取所有作品（带分页）
+func (s *OperaService) GetAllOperas(pagination *pagination.Pagination, includeHidden bool, userID uint) ([]models.OperaListResponse, int64, error) {
+	operas, total, err := s.operaRepo.GetAll(pagination, includeHidden)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	responses := make([]models.OperaListResponse, len(operas))
+	for i, opera := range operas {
+		resp := converter.ToOperaListResponse(opera)
+		if resp != nil {
+			responses[i] = *resp
+		}
+	}
+
+	return responses, total, nil
+}
+
+// GetOperasByIDs 根据ID列表获取作品（保持顺序）
+func (s *OperaService) GetOperasByIDs(ids []uint, userID uint) ([]models.OperaListResponse, error) {
+	// 使用保持顺序的方法
+	operas, err := s.operaRepo.GetByIDsInOrder(ids)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]models.OperaListResponse, len(operas))
+	for i, opera := range operas {
+		resp := converter.ToOperaListResponse(opera)
+		if resp != nil {
+			responses[i] = *resp
+		}
+	}
+
+	return responses, nil
+}
 
 // Helper to process new artist names
 func processNewArtistNames(newNames []string) ([]uint, error) {

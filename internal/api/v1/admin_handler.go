@@ -205,3 +205,70 @@ func HandleAdminGetDashboardStats(c *gin.Context) {
 	}
 	resp.Success(c, stats)
 }
+
+// HandleGenerateOperaSummary (POST /api/v1/admin/operas/:id/generate-summary)
+func HandleGenerateOperaSummary(c *gin.Context) {
+	idParam := c.Param("id")
+	operaID, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		resp.BadRequest(c, "Invalid opera ID")
+		return
+	}
+
+	// 获取作品
+	opera, err := services.GetOperaByID(uint(operaID))
+	if err != nil {
+		resp.NotFound(c, "Opera not found")
+		return
+	}
+
+	// 检查是否有字幕文件
+	if !opera.SrtPath.Valid || opera.SrtPath.String == "" {
+		resp.BadRequest(c, "Opera has no subtitle file")
+		return
+	}
+
+	// 生成AI摘要（同步）
+	summary, err := services.GenerateOperaSummarySync(uint(operaID), opera.SrtPath.String)
+	if err != nil {
+		resp.InternalServerError(c, "Failed to generate summary: "+err.Error())
+		return
+	}
+
+	resp.Success(c, gin.H{
+		"message": "Summary generated successfully",
+		"summary": summary,
+	})
+}
+
+// HandleBatchGenerateOperaSummaries (POST /api/v1/admin/operas/batch-summary)
+func HandleBatchGenerateOperaSummaries(c *gin.Context) {
+	var req struct {
+		OperaIDs []uint `json:"opera_ids"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.BadRequest(c, "Invalid request")
+		return
+	}
+
+	if len(req.OperaIDs) == 0 {
+		resp.BadRequest(c, "No opera IDs provided")
+		return
+	}
+
+	total := services.BatchGenerateOperaSummariesAsync(req.OperaIDs)
+
+	if total == 0 {
+		resp.Success(c, gin.H{
+			"message": "No operas need summary generation",
+			"total":   0,
+		})
+		return
+	}
+
+	resp.Success(c, gin.H{
+		"message": "Batch summary generation started",
+		"total":   total,
+	})
+}

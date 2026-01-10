@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/auth';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import DPlayer from 'dplayer';
+import { getSimilarOperas } from '../../api/recommendation';
 import type { OperaDetail, OperaListItem, Comment } from '../../types';
 import EmojiIcon from '../../assets/emoji.svg?component';
 import PlayCountIcon from '../../assets/play_count.svg?component';
@@ -100,14 +101,20 @@ export default defineComponent({
           axios.post(`/api/v1/operas/${id}/history`).catch(err => console.error("Failed to record history:", err));
         }
 
-        // Fetch random recommendations
+        // Fetch similar operas recommendations
+        try {
+          const similarResponse = await getSimilarOperas(Number(id), { limit: 5 });
+          if (similarResponse.data && similarResponse.data.operas) {
+            recommendations.value = similarResponse.data.operas;
+          }
+        } catch (error) {
+          console.error("Failed to fetch similar operas, falling back to random:", error);
+        }
+        // Fallback to random recommendations
         const recResponse = await axios.get('/api/v1/operas/');
         if (recResponse.data && recResponse.data.data && recResponse.data.data.list) {
           recommendations.value = recResponse.data.data.list.slice(0, 5);
         }
-
-        // Fetch comments
-        fetchComments();
 
       } catch (error: any) {
         console.error("Failed to fetch opera:", error);

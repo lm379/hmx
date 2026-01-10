@@ -14,6 +14,9 @@ export default defineComponent({
     const avatarUploadRef = ref<UploadInstance>();
     const videoProgress = ref(0);
     const avatarProgress = ref(0);
+    const batchEmbeddingLoading = ref(false);
+    const batchSummaryLoading = ref(false);
+    const selectedRows = ref<any[]>([]);
 
     const dialogVisible = ref(false);
     const isEdit = ref(false);
@@ -30,6 +33,10 @@ export default defineComponent({
     });
 
     const artistOptions = ref<any[]>([]);
+
+    const handleSelectionChange = (selection: any[]) => {
+      selectedRows.value = selection;
+    };
 
     const fetchData = async () => {
       loading.value = true;
@@ -128,6 +135,103 @@ export default defineComponent({
         } catch (e) {
           ElMessage.error('删除失败');
         }
+      });
+    };
+
+    // AI功能：生成单个视频的向量
+    const handleGenerateEmbedding = async (row: any) => {
+      row._embeddingLoading = true;
+      try {
+        const res = await axios.post(`/api/v1/admin/operas/${row.opera_id}/embedding`);
+        ElMessage.success(res.data.message || '向量生成成功');
+        fetchData();
+      } catch (e: any) {
+        ElMessage.error(e.response?.data?.message || '向量生成失败');
+      } finally {
+        row._embeddingLoading = false;
+      }
+    };
+
+    // AI功能：生成单个视频的AI摘要
+    const handleGenerateSummary = async (row: any) => {
+      if (!row.srt_path) {
+        ElMessage.warning('该视频没有字幕文件，无法生成AI摘要');
+        return;
+      }
+      row._summaryLoading = true;
+      try {
+        const res = await axios.post(`/api/v1/admin/operas/${row.opera_id}/generate-summary`);
+        ElMessage.success(res.data.message || 'AI摘要生成成功');
+        fetchData();
+      } catch (e: any) {
+        ElMessage.error(e.response?.data?.message || 'AI摘要生成失败');
+      } finally {
+        row._summaryLoading = false;
+      }
+    };
+
+    // AI功能：批量生成所有视频的向量
+    const handleBatchGenerateEmbedding = async () => {
+      if (selectedRows.value.length === 0) {
+        ElMessage.warning('请先选择要生成向量的视频');
+        return;
+      }
+      
+      const ids = selectedRows.value.map(row => row.opera_id);
+      ElMessageBox.confirm(`确定要为选中的 ${ids.length} 个视频生成向量吗？这可能需要一些时间。`, '提示', {
+        type: 'warning',
+        confirmButtonText: '确定',
+        cancelButtonText: '取消'
+      }).then(async () => {
+        batchEmbeddingLoading.value = true;
+        try {
+          const res = await axios.post('/api/v1/admin/operas/batch-embedding', { opera_ids: ids });
+          const data = res.data.data;
+          ElMessage.success(`批量生成已开始！共 ${data.total} 个视频`);
+          fetchData();
+        } catch (e: any) {
+          ElMessage.error(e.response?.data?.message || '批量生成失败');
+        } finally {
+          batchEmbeddingLoading.value = false;
+        }
+      }).catch(() => {
+        // 用户取消
+      });
+    };
+
+    // AI功能：批量生成所有有字幕视频的AI摘要
+    const handleBatchGenerateSummary = async () => {
+      if (selectedRows.value.length === 0) {
+        ElMessage.warning('请先选择要生成AI摘要的视频');
+        return;
+      }
+      
+      const ids = selectedRows.value.map(row => row.opera_id);
+      const withSubtitle = selectedRows.value.filter(row => row.srt_path).length;
+      
+      if (withSubtitle === 0) {
+        ElMessage.warning('所选视频中没有包含字幕的视频');
+        return;
+      }
+      
+      ElMessageBox.confirm(`确定要为选中的 ${ids.length} 个视频生成AI摘要吗（其中 ${withSubtitle} 个有字幕）？这可能需要较长时间。`, '提示', {
+        type: 'warning',
+        confirmButtonText: '确定',
+        cancelButtonText: '取消'
+      }).then(async () => {
+        batchSummaryLoading.value = true;
+        try {
+          const res = await axios.post('/api/v1/admin/operas/batch-summary', { opera_ids: ids });
+          const data = res.data.data;
+          ElMessage.success(`批量生成已开始！共 ${data.total} 个视频`);
+          fetchData();
+        } catch (e: any) {
+          ElMessage.error(e.response?.data?.message || '批量生成失败');
+        } finally {
+          batchSummaryLoading.value = false;
+        }
+      }).catch(() => {
+        // 用户取消
       });
     };
 
@@ -391,10 +495,17 @@ export default defineComponent({
       form,
       artistOptions,
       fetchData,
+      handleSelectionChange,
       handleCreate,
       handleEdit,
       handleToggleHidden,
       handleDelete,
+      handleGenerateEmbedding,
+      handleGenerateSummary,
+      handleBatchGenerateEmbedding,
+      handleBatchGenerateSummary,
+      batchEmbeddingLoading,
+      batchSummaryLoading,
       handleElFileChange,
       handleElFileRemove,
       handleExceed,

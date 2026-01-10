@@ -22,24 +22,50 @@ export default defineComponent({
     const fetchOperas = async (page = 1) => {
       try {
         loading.value = true;
-        const response = await axios.get('/api/v1/operas/', {
+        // 使用推荐接口（支持游客和登录用户）
+        const response = await axios.get('/api/v1/recommendations/', {
           params: {
             page: page,
-            page_size: pageSize.value
+            page_size: pageSize.value,
+            similarity_weight: 0.5,
+            interest_weight: 0.5
           }
         });
 
         if (response.data && response.data.data) {
-          operas.value = response.data.data.list || [];
+          operas.value = response.data.data.operas || [];
+
+          // 处理分页信息
           if (response.data.data.pagination) {
-            totalItems.value = response.data.data.pagination.total;
-            currentPage.value = response.data.data.pagination.page;
+            totalItems.value = response.data.data.pagination.total || 0;
+            currentPage.value = response.data.data.pagination.page || page;
+          } else {
+            totalItems.value = operas.value.length;
+            currentPage.value = page;
           }
         } else {
           console.error("Unexpected API response structure:", response.data);
         }
       } catch (error) {
-        console.error("Failed to fetch operas:", error);
+        console.error("Failed to fetch recommendations, falling back to normal list:", error);
+        // 降级到普通列表
+        try {
+          const fallbackResponse = await axios.get('/api/v1/operas/', {
+            params: {
+              page: page,
+              page_size: pageSize.value
+            }
+          });
+          if (fallbackResponse.data && fallbackResponse.data.data) {
+            operas.value = fallbackResponse.data.data.list || [];
+            if (fallbackResponse.data.data.pagination) {
+              totalItems.value = fallbackResponse.data.data.pagination.total;
+              currentPage.value = fallbackResponse.data.data.pagination.page;
+            }
+          }
+        } catch (fallbackError) {
+          console.error("Fallback also failed:", fallbackError);
+        }
       } finally {
         loading.value = false;
       }

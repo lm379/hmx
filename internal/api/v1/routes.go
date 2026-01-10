@@ -57,7 +57,9 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 		{
 			operas.GET("/", middleware.TryAuthMiddleware(), HandleGetOperas)
 			operas.GET("/:id", middleware.TryAuthMiddleware(), HandleGetOperaByID)
-			operas.POST("/:id/history", middleware.TryAuthMiddleware(), HandleRecordHistory) // 允许游客记录，但优先获取用户信息
+			operas.GET("/:id/similar", middleware.TryAuthMiddleware(), HandleGetSimilarOperas) // 相似作品推荐
+			operas.GET("/:id/summary", middleware.TryAuthMiddleware(), HandleGetVideoSummary)  // 视频AI字幕摘要
+			operas.POST("/:id/history", middleware.TryAuthMiddleware(), HandleRecordHistory)   // 允许游客记录，但优先获取用户信息
 			operas.POST("/", middleware.AuthMiddleware(), HandleCreateOpera)
 			operas.POST("/:id/like", middleware.AuthMiddleware(), HandleToggleLike)
 			operas.POST("/:id/favorite", middleware.AuthMiddleware(), HandleToggleFavorite)
@@ -81,6 +83,12 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			comments.POST("/:id/like", HandleToggleCommentLike)
 		}
 
+		// 推荐路由 (Recommendations)
+		recommendations := v1.Group("/recommendations")
+		{
+			recommendations.GET("/", middleware.TryAuthMiddleware(), HandleGetRecommendations) // 个性化推荐（支持游客）
+		}
+
 		// 管理员路由 (Admin)
 		admin := v1.Group("/admin")
 		admin.Use(middleware.AuthMiddleware())
@@ -91,6 +99,10 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			admin.GET("/operas", HandleAdminGetOperas)
 			admin.PUT("/operas/:id", HandleAdminUpdateOpera)
 			admin.DELETE("/operas/:id", HandleDeleteOpera)
+			admin.POST("/operas/:id/embedding", HandleGenerateEmbedding)           // 生成单个向量
+			admin.POST("/operas/batch-embedding", HandleBatchGenerateEmbeddings)   // 批量生成向量
+			admin.POST("/operas/:id/generate-summary", HandleGenerateOperaSummary) // 生成单个AI摘要
+			admin.POST("/operas/batch-summary", HandleBatchGenerateOperaSummaries) // 批量生成AI摘要
 			admin.GET("/artists", HandleGetArtists)
 			admin.POST("/artists", HandleAdminCreateArtist)
 			admin.PUT("/artists/:id", HandleAdminUpdateArtist)

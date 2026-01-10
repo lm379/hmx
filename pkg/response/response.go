@@ -36,6 +36,24 @@ func Created(c *gin.Context, data interface{}) {
 	})
 }
 
+// Acceped 接受成功响应 (202)
+func Acceped(c *gin.Context, data interface{}) {
+	c.JSON(202, Response{
+		Code: 202,
+		Msg:  "accepted",
+		Data: data,
+	})
+}
+
+// No Content 无内容响应 (204)
+func NoContent(c *gin.Context) {
+	c.JSON(204, Response{
+		Code: 204,
+		Msg:  "no content",
+		Data: nil,
+	})
+}
+
 // Error 错误响应
 func Error(c *gin.Context, code int, msg string) {
 	c.JSON(code, Response{
@@ -70,7 +88,27 @@ func Conflict(c *gin.Context, msg string) {
 	Error(c, 409, msg)
 }
 
+// TooManyRequests 429 错误
+func TooManyRequests(c *gin.Context, msg string) {
+	Error(c, 429, msg)
+}
+
 // InternalServerError 500 错误
 func InternalServerError(c *gin.Context, msg string) {
 	Error(c, 500, msg)
+}
+
+// ServiceUnavailable 503 错误
+func ServiceUnavailable(c *gin.Context, msg string) {
+	Error(c, 503, msg)
+}
+
+// GatewayTimeout 504 错误
+func GatewayTimeout(c *gin.Context, msg string) {
+	Error(c, 504, msg)
+}
+
+// GatewayError 502 错误
+func GatewayError(c *gin.Context, msg string) {
+	Error(c, 502, msg)
 }

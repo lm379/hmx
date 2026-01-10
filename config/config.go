@@ -37,6 +37,17 @@ type Config struct {
 	SMTPUser        string `mapstructure:"SMTP_USER"`
 	SMTPPass        string `mapstructure:"SMTP_PASS"`
 	SMTPCodeExpires uint   `mapstructure:"SMTP_CODE_EXPIRES"`
+
+	// AI服务配置
+	// Embedding服务
+	EmbeddingAPIKey  string `mapstructure:"EMBEDDING_API_KEY"`
+	EmbeddingBaseURL string `mapstructure:"EMBEDDING_BASE_URL"`
+	EmbeddingModel   string `mapstructure:"EMBEDDING_MODEL"`
+
+	// 视频总结服务（基于AI字幕）
+	SubtitleAPIKey  string `mapstructure:"SUBTITLE_API_KEY"`
+	SubtitleBaseURL string `mapstructure:"SUBTITLE_BASE_URL"`
+	SubtitleModel   string `mapstructure:"SUBTITLE_MODEL"`
 }
 
 var AppConfig Config
@@ -55,6 +66,12 @@ func LoadConfig() {
 	viper.SetDefault("JWT_REFRESH_TOKEN_EXPIRES_IN", "168h")
 	viper.SetDefault("S3_AVATAR_PATH", "avatars")
 	viper.SetDefault("S3_VIDEO_PATH", "videos")
+
+	// AI服务默认配置
+	viper.SetDefault("EMBEDDING_BASE_URL", "https://api.openai.com/v1")
+	viper.SetDefault("EMBEDDING_MODEL", "text-embedding-3-small")
+	viper.SetDefault("SUBTITLE_BASE_URL", "https://api.openai.com/v1")
+	viper.SetDefault("SUBTITLE_MODEL", "gpt-4.1")
 
 	AppConfig.S3PresignExpires = viper.GetDuration("S3_PRESIGN_EXPIRES_IN_MINUTES") * time.Minute
 	AppConfig.JWTAccessTokenExpiresIn = viper.GetDuration("JWT_ACCESS_TOKEN_EXPIRES_IN")

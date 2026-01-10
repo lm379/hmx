@@ -2,9 +2,12 @@
   <div class="video-manager">
     <div class="toolbar">
       <el-button type="primary" @click="handleCreate">上传视频</el-button>
+      <el-button type="success" @click="handleBatchGenerateEmbedding" :loading="batchEmbeddingLoading">批量生成向量</el-button>
+      <el-button type="warning" @click="handleBatchGenerateSummary" :loading="batchSummaryLoading">批量生成AI摘要</el-button>
     </div>
 
-    <el-table :data="tableData" style="width: 100%" v-loading="loading">
+    <el-table :data="tableData" style="width: 100%" v-loading="loading" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" />
       <el-table-column prop="opera_id" label="ID" width="80" />
       <el-table-column label="封面" width="100">
         <template #default="scope">
@@ -26,13 +29,15 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="250">
+      <el-table-column label="操作" width="400">
         <template #default="scope">
           <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
           <el-button size="small" :type="scope.row.is_hidden ? 'success' : 'warning'"
             @click="handleToggleHidden(scope.row)">
             {{ scope.row.is_hidden ? '显示' : '隐藏' }}
           </el-button>
+          <el-button size="small" type="info" @click="handleGenerateEmbedding(scope.row)" :loading="scope.row._embeddingLoading">生成向量</el-button>
+          <el-button size="small" type="warning" @click="handleGenerateSummary(scope.row)" :loading="scope.row._summaryLoading" :disabled="!scope.row.srt_path">AI摘要</el-button>
           <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>

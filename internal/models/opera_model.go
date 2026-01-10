@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"time"
+
+	"github.com/pgvector/pgvector-go"
 )
 
 // Artist (艺术家表)
@@ -23,20 +25,21 @@ func (Artist) TableName() string {
 
 // Opera (黄梅戏作品表)
 type Opera struct {
-	OperaID     uint           `gorm:"column:opera_id;primaryKey"`
-	OperaTitle  string         `gorm:"column:opera_title;type:varchar(100);not null"`
-	ReleaseDate sql.NullTime   `gorm:"column:release_date"`
-	Duration    sql.NullString `gorm:"column:duration;type:time"` // 时长
-	MusicPath   sql.NullString `gorm:"column:music_path;type:varchar(255)"`
-	VideoPath   string         `gorm:"column:video_path;type:varchar(255);not null"`
-	SrtPath     sql.NullString `gorm:"column:srt_path;type:varchar(255)"`
-	Description string         `gorm:"column:description;type:text"`
-	Avatar      sql.NullString `gorm:"column:avatar;type:varchar(255)"`
-	AiSummary   string         `gorm:"column:ai_summary;type:text"`
-	IsHidden    bool           `gorm:"column:is_hidden;default:false;not null"`
-	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt   time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP"`
-	Artists     []*Artist      `gorm:"many2many:opera_artists;joinForeignKey:opera_id;joinReferences:artist_id"`
+	OperaID     uint            `gorm:"column:opera_id;primaryKey"`
+	OperaTitle  string          `gorm:"column:opera_title;type:varchar(100);not null"`
+	ReleaseDate sql.NullTime    `gorm:"column:release_date"`
+	Duration    sql.NullString  `gorm:"column:duration;type:time"` // 时长
+	MusicPath   sql.NullString  `gorm:"column:music_path;type:varchar(255)"`
+	VideoPath   string          `gorm:"column:video_path;type:varchar(255);not null"`
+	SrtPath     sql.NullString  `gorm:"column:srt_path;type:varchar(255)"`
+	Description string          `gorm:"column:description;type:text"`
+	Avatar      sql.NullString  `gorm:"column:avatar;type:varchar(255)"`
+	AiSummary   string          `gorm:"column:ai_summary;type:text"`
+	Embedding   pgvector.Vector `gorm:"column:embedding;type:vector(1536)"` // AI向量表示，使用pgvector
+	IsHidden    bool            `gorm:"column:is_hidden;default:false;not null"`
+	CreatedAt   time.Time       `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt   time.Time       `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP"`
+	Artists     []*Artist       `gorm:"many2many:opera_artists;joinForeignKey:opera_id;joinReferences:artist_id"`
 }
 
 // TableName 指定表名
