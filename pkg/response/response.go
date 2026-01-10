@@ -54,6 +54,14 @@ func NoContent(c *gin.Context) {
 	})
 }
 
+func NoContentWithMsg(c *gin.Context, msg string) {
+	c.JSON(204, Response{
+		Code: 204,
+		Msg:  msg,
+		Data: nil,
+	})
+}
+
 // Error 错误响应
 func Error(c *gin.Context, code int, msg string) {
 	c.JSON(code, Response{
