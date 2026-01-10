@@ -88,8 +88,9 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
-          # 删除数据库 SQL 日志打印
+          # 删除数据库 SQL 日志打印相关代码
           sed -i '/Logger:.*logger.Default.LogMode(logger.Info)/d' database/database.go
+          sed -i '/\t"gorm.io\/gorm\/logger"/d' database/database.go
           
           # 设置输出文件名
           OUTPUT_NAME="hmx-${{ matrix.goos }}-${{ matrix.goarch }}"
