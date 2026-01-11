@@ -57,9 +57,10 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 		{
 			operas.GET("/", middleware.TryAuthMiddleware(), HandleGetOperas)
 			operas.GET("/:id", middleware.TryAuthMiddleware(), HandleGetOperaByID)
-			operas.GET("/:id/similar", middleware.TryAuthMiddleware(), HandleGetSimilarOperas) // 相似作品推荐
-			operas.GET("/:id/summary", middleware.TryAuthMiddleware(), HandleGetVideoSummary)  // 视频AI字幕摘要
-			operas.POST("/:id/history", middleware.TryAuthMiddleware(), HandleRecordHistory)   // 允许游客记录，但优先获取用户信息
+			operas.GET("/:id/similar", middleware.TryAuthMiddleware(), HandleGetSimilarOperas)          // 相似作品推荐
+			operas.GET("/:id/summary", middleware.TryAuthMiddleware(), HandleGetVideoSummary)           // 视频AI字幕摘要
+			operas.POST("/:id/request-summary", middleware.AuthMiddleware(), HandleRequestOperaSummary) // 用户请求生成AI摘要
+			operas.POST("/:id/history", middleware.TryAuthMiddleware(), HandleRecordHistory)            // 允许游客记录，但优先获取用户信息
 			operas.POST("/", middleware.AuthMiddleware(), HandleCreateOpera)
 			operas.POST("/:id/like", middleware.AuthMiddleware(), HandleToggleLike)
 			operas.POST("/:id/favorite", middleware.AuthMiddleware(), HandleToggleFavorite)

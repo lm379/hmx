@@ -43,10 +43,39 @@ export default defineComponent({
     const aiSearchQuery = ref('');
     let aiTypingInterval: number | null = null;
 
-    const toggleAiSummary = () => {
+    const toggleAiSummary = async () => {
       showAiSummary.value = !showAiSummary.value;
       if (showAiSummary.value) {
-        startAiSummaryTyping();
+        // 检查是否有AI摘要，如果没有则自动触发生成
+        if (!opera.value?.ai_summary || opera.value.ai_summary.trim() === '') {
+          // 检查是否登录
+          if (!isLoggedIn.value) {
+            displayedAiSummary.value = '请先登录后再请求AI摘要生成...';
+            return;
+          }
+          
+          try {
+            const operaId = opera.value?.opera_id;
+            if (operaId) {
+              // 调用用户端生成API
+              await axios.post(`/api/v1/operas/${operaId}/request-summary`);
+              // 提示用户摘要正在生成
+              displayedAiSummary.value = '正在为您生成AI摘要，请稍后刷新页面查看...';
+            }
+          } catch (error: any) {
+            // 如果是204，说明摘要已存在但可能页面数据未更新
+            if (error.response?.status === 204) {
+              displayedAiSummary.value = '摘要已存在，请刷新页面查看...';
+            } else if (error.response?.status === 401) {
+              displayedAiSummary.value = '请先登录...';
+            } else {
+              console.error('生成AI摘要失败:', error);
+              displayedAiSummary.value = error.response?.data?.msg || '暂时无法生成AI摘要，请稍后再试...';
+            }
+          }
+        } else {
+          startAiSummaryTyping();
+        }
       } else {
         if (aiTypingInterval) {
           clearInterval(aiTypingInterval);
@@ -70,13 +99,13 @@ export default defineComponent({
     const highlightedAiSummary = computed(() => {
       const text = displayedAiSummary.value;
       const query = aiSearchQuery.value.trim();
-      
+
       if (!query) return text;
 
       // Escape special regex characters in query
       const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`(${safeQuery})`, 'gi');
-      
+
       // Simple HTML replacement for highlighting
       // Note: This assumes original text doesn't contain HTML that conflicts.
       return text.replace(regex, '<span class="highlight">$1</span>');
@@ -89,9 +118,9 @@ export default defineComponent({
       }
       displayedAiSummary.value = '';
 
-      const summary = opera.value?.ai_summary || '暂无AI总结内容。';
+      const summary = opera.value?.ai_summary || '正在生成中，请稍后...';
       let currentIndex = 0;
-      
+
       // Update every 50ms for smoother effect
       aiTypingInterval = window.setInterval(() => {
         if (currentIndex >= summary.length) {
@@ -101,7 +130,7 @@ export default defineComponent({
           }
           return;
         }
-        
+
         const count = Math.floor(Math.random() * 3) + 1; // 1 to 3 chars
         const nextIndex = Math.min(currentIndex + count, summary.length);
         displayedAiSummary.value += summary.slice(currentIndex, nextIndex);

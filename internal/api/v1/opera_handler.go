@@ -108,3 +108,53 @@ func HandleGetOperaByID(c *gin.Context) {
 	}
 	resp.Success(c, operaResponse)
 }
+
+// HandleRequestOperaSummary (POST /api/v1/operas/:id/request-summary)
+// 用户端请求生成AI摘要（需要登录，只能生成不存在摘要的视频）
+func HandleRequestOperaSummary(c *gin.Context) {
+	idParam := c.Param("id")
+	operaID, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		resp.BadRequest(c, "Invalid opera ID")
+		return
+	}
+
+	// 检查用户是否登录
+	_, exists := c.Get("userID")
+	if !exists {
+		resp.Unauthorized(c, "Please login first")
+		return
+	}
+
+	// 获取作品
+	opera, err := services.GetOperaByID(uint(operaID))
+	if err != nil {
+		resp.NotFound(c, "Opera not found")
+		return
+	}
+
+	// 检查是否有字幕文件
+	if !opera.SrtPath.Valid || opera.SrtPath.String == "" {
+		resp.BadRequest(c, "Opera has no subtitle file")
+		return
+	}
+
+	// 检查是否已有摘要，如果有则返回204
+	if opera.AiSummary != "" {
+		resp.NoContentWithMsg(c, "Summary already exists")
+		return
+	}
+
+	// 将任务加入队列（异步，force=false）
+	batchID, _, err := services.BatchGenerateOperaSummariesAsync([]uint{uint(operaID)}, false)
+	if err != nil {
+		resp.InternalServerError(c, "Failed to start summary generation: "+err.Error())
+		return
+	}
+
+	resp.Success(c, gin.H{
+		"message":  "Summary generation started",
+		"task_id":  batchID,
+		"opera_id": operaID,
+	})
+}
