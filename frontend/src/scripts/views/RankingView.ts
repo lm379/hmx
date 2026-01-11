@@ -24,7 +24,6 @@ export default defineComponent({
         const data = await getOperas({
           page: page,
           page_size: pageSize.value,
-          sort: 'play_count desc'
         });
         if (data && data.data && data.data.list) {
           rankings.value = data.data.list;
