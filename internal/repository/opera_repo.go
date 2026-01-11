@@ -35,9 +35,29 @@ func (r *OperaRepo) GetAll(pagination *pagination.Pagination, includeHidden bool
 		return nil, 0, err
 	}
 
+	// 按播放量排序
+	if pagination.Sort == "play_count desc" || pagination.Sort == "play_count asc" {
+		orderDir := "DESC"
+		if pagination.Sort == "play_count asc" {
+			orderDir = "ASC"
+		}
+
+		offset := (pagination.Page - 1) * pagination.PageSize
+
+		err := db.Select("opera.*").
+			Joins("LEFT JOIN play_history ON opera.opera_id = play_history.opera_id").
+			Group("opera.opera_id").
+			Order("COALESCE(SUM(play_history.count), 0) " + orderDir).
+			Offset(offset).
+			Limit(pagination.PageSize).
+			Preload("Artists").
+			Find(&operas).Error
+
+		return operas, total, err
+	}
+
 	err := db.Scopes(pagination.Paginate()).
 		Preload("Artists").
-		Order("created_at desc").
 		Find(&operas).Error
 
 	return operas, total, err

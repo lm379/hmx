@@ -36,6 +36,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { showCategoryBar: true }
   },
   {
+    path: '/ranking',
+    name: 'Ranking',
+    component: () => import('../views/RankingView.vue'),
+    meta: { showCategoryBar: true }
+  },
+  {
     path: '/artist/:id',
     name: 'ArtistProfile',
     component: () => import('../views/ArtistProfileView.vue')

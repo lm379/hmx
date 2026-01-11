@@ -11,6 +11,7 @@ import PlayCountIcon from '../../assets/play_count.svg?component';
 import LikeIcon from '../../assets/like.svg?component';
 import FavIcon from '../../assets/fav.svg?component';
 import ShareIcon from '../../assets/share.svg?component';
+import { formatDateTime } from '../../utils/dateUtils';
 
 export default defineComponent({
   name: 'PlayView',
@@ -440,18 +441,6 @@ export default defineComponent({
       }
     });
 
-    const formatTime = (time: string) => {
-      if (!time) return '';
-      const date = new Date(time);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    };
-
     const formatArtists = (artists: { name: string }[]) => {
       if (!artists || artists.length === 0) return '黄梅戏官方';
       // 超过三人则只显示前三人名字
@@ -524,7 +513,7 @@ export default defineComponent({
       currentUser,
       showEmojiPicker,
       emojiList,
-      formatTime,
+      formatDateTime,
       formatArtists,
       onToggleLike,
       onToggleFavorite,

@@ -12,8 +12,9 @@
           <button class="cat-btn" :class="{ active: $route.path === '/artists' }" @click="$router.push('/artists')">
             名家风采
           </button>
-          <!-- <button class="cat-btn">热门视频</button>
-          <button class="cat-btn">排行</button> -->
+          <button class="cat-btn" :class="{ active: $route.path === '/ranking' }" @click="$router.push('/ranking')">
+            热门排行
+          </button>
         </div>
       </div>
 

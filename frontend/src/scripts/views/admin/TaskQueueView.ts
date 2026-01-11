@@ -1,6 +1,7 @@
 import { defineComponent, ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 import { View, Refresh, DataAnalysis, Document, Loading } from '@element-plus/icons-vue';
+import { formatDateTime } from '../../../utils/dateUtils';
 
 export default defineComponent({
   name: 'TaskQueueView',
@@ -44,19 +45,6 @@ export default defineComponent({
         total: processing + pending + completed
       };
     });
-
-    // 格式化时间
-    const formatTime = (time: string) => {
-      if (!time) return '';
-      const date = new Date(time);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    };
 
     // 获取队列状态
     const fetchQueueStatus = async () => {
@@ -118,7 +106,7 @@ export default defineComponent({
       embeddingStats,
       summaryStats,
       fetchQueueStatus,
-      formatTime
+      formatTime: formatDateTime
     };
   }
 });

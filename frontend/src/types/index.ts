@@ -80,11 +80,15 @@ export interface Opera {
 }
 
 export interface OperaListResponse {
-    list: OperaListItem[];
-    pagination: {
-        total: number;
-        page: number;
-        page_size: number;
+    code: number;
+    msg: string;
+    data: {
+        list: OperaListItem[];
+        pagination: {
+            total: number;
+            page: number;
+            page_size: number;
+        }
     }
 }
 

@@ -7,6 +7,7 @@ import Pagination from '../../components/Pagination.vue';
 import { useAuthStore } from '../../stores/auth';
 import type { OperaListItem, UpdateUserProfileRequest } from '../../types';
 import { validateEmail, validatePhone } from '../../utils/validators';
+import { formatDateTime } from '../../utils/dateUtils';
 
 export default defineComponent({
   name: 'ProfileView',
@@ -120,18 +121,6 @@ export default defineComponent({
     onMounted(() => {
       fetchUser();
     });
-
-    const formatTime = (time: string) => {
-      if (!time) return '';
-      const date = new Date(time);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    };
 
     // --- Edit Profile Logic ---
 
@@ -336,7 +325,7 @@ export default defineComponent({
       pageSize,
       totalItems,
       handlePageChange,
-      formatTime,
+      formatTime: formatDateTime,
       // Edit Profile
       showEditModal,
       editLoading,

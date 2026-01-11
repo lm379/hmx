@@ -11,7 +11,7 @@
               <PlayCountIcon />{{ opera.play_count || 0 }}
             </span>
             <span class="divider"></span>
-            <span>{{ formatTime(opera.created_at) }}</span>
+            <span>{{ formatDateTime(opera.created_at) }}</span>
           </div>
         </div>
         <!-- Video Player Section -->
@@ -160,7 +160,7 @@
                 </div>
                 <div class="comment-text">{{ comment.comment_text }}</div>
                 <div class="comment-footer">
-                  <span class="time">{{ formatTime(comment.created_at) }}</span>
+                  <span class="time">{{ formatDateTime(comment.created_at) }}</span>
                   <span class="action-btn like-btn" :class="{ active: comment.liked }"
                     @click="onToggleCommentLike(comment)">
                     <svg id="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -218,7 +218,7 @@
                       </div>
                       <div class="comment-text">{{ reply.comment_text }}</div>
                       <div class="comment-footer">
-                        <span class="time">{{ formatTime(reply.created_at) }}</span>
+                        <span class="time">{{ formatDateTime(reply.created_at) }}</span>
                         <span class="action-btn like-btn" :class="{ active: reply.liked }"
                           @click="onToggleCommentLike(reply)">
                           <svg id="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"

@@ -1,5 +1,6 @@
 import { defineComponent, computed, type PropType } from 'vue';
 import type { OperaListItem, SimpleOpera } from '../../types';
+import { formatDate, formatDuration } from '../../utils/dateUtils';
 type VideoCardProps = OperaListItem | SimpleOpera;
 
 export default defineComponent({
@@ -23,28 +24,8 @@ export default defineComponent({
         const names = props.opera.artists.slice(0, 3).map(artist => artist.name);
         return names.length === 3 ? names.join(", ") + "等" : names.join(", ");
       }
-      return null; // 返回 null 表示不显示艺术家信息
+      return "黄梅戏官方"; // 默认显示
     });
-
-    const formatDuration = (durationStr?: string) => {
-      if (!durationStr) return '';
-      // Assume duration comes as "HH:MM:SS" or similar from SQL time type.
-      return durationStr;
-    };
-
-    const formatDate = (dateStr: string) => {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-      if (days === 0) return '今天';
-      if (days === 1) return '昨天';
-      if (days < 7) return `${days}天前`;
-
-      return `${date.getMonth() + 1}-${date.getDate()}`;
-    };
 
     return {
       props,
