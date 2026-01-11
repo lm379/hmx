@@ -69,7 +69,19 @@ func (s *RecommendationService) RecommendForUser(userID uint, page int, limit in
 	}
 
 	// 总数（用于前端显示）
-	total := int64(len(recommendedIDs))
+	var total int64
+	
+	// 计算真实的可用总数 = 全局可见总数 - 排除的ID数
+	totalVisible, err := s.operaRepo.CountVisible()
+	if err != nil {
+		// 如果获取失败，回退到当前切片长度
+		total = int64(len(recommendedIDs))
+	} else {
+		total = totalVisible - int64(len(excludeIDs))
+		if total < 0 {
+			total = 0
+		}
+	}
 
 	// 如果推荐结果少于请求的总数，用热门视频补充
 	minRequired := limit * page
@@ -82,7 +94,7 @@ func (s *RecommendationService) RecommendForUser(userID uint, page int, limit in
 		popularIDs, err := s.operaRepo.GetPopularOperas(excludeForPopular, needed)
 		if err == nil && len(popularIDs) > 0 {
 			recommendedIDs = append(recommendedIDs, popularIDs...)
-			total = int64(len(recommendedIDs))
+			// 注意：total不需要更新，因为popularIDs本来就在totalVisible里
 		}
 	}
 

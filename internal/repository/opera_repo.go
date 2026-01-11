@@ -168,7 +168,7 @@ func (r *OperaRepo) GetPopularOperas(excludeIDs []uint, limit int) ([]uint, erro
 		db = db.Where("op.opera_id NOT IN ?", excludeIDs)
 	}
 
-	err := db.Order("COALESCE(scores.interest_score, 0) DESC, op.created_at DESC").
+	err := db.Order("COALESCE(scores.interest_score, 0) DESC, op.opera_id ASC").
 		Limit(limit).
 		Pluck("opera_id", &operaIDs).Error
 
@@ -180,4 +180,11 @@ func (r *OperaRepo) GetOperasNeedingSummary() ([]models.Opera, error) {
 	var operas []models.Opera
 	err := r.getDB().Where("srt_path != '' AND srt_path IS NOT NULL AND (ai_summary = '' OR ai_summary IS NULL)").Find(&operas).Error
 	return operas, err
+}
+
+// CountVisible 获取可见（非隐藏）作品的总数
+func (r *OperaRepo) CountVisible() (int64, error) {
+	var count int64
+	err := r.getDB().Model(&models.Opera{}).Where("is_hidden = ?", false).Count(&count).Error
+	return count, err
 }
