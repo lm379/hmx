@@ -62,7 +62,7 @@ func (r *OperaRepo) GetByID(id uint) (*models.Opera, error) {
 
 // Create 创建作品
 func (r *OperaRepo) Create(opera *models.Opera) error {
-	return r.getDB().Create(opera).Error
+	return r.getDB().Omit("embedding").Create(opera).Error
 }
 
 // Update 更新作品基本信息
