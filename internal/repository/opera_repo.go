@@ -35,9 +35,20 @@ func (r *OperaRepo) GetAll(pagination *pagination.Pagination, includeHidden bool
 		return nil, 0, err
 	}
 
-	// 默认按播放量从高到低排序
+	// 管理后台按照ID升序排序，用户端按照播放量降序
 	offset := (pagination.Page - 1) * pagination.PageSize
 
+	if includeHidden {
+		// 管理后台：按ID升序
+		err := db.Order("opera.opera_id ASC").
+			Offset(offset).
+			Limit(pagination.PageSize).
+			Preload("Artists").
+			Find(&operas).Error
+		return operas, total, err
+	}
+
+	// 用户端：按播放量降序
 	err := db.Select("opera.*").
 		Joins("LEFT JOIN play_history ON opera.opera_id = play_history.opera_id").
 		Group("opera.opera_id").
