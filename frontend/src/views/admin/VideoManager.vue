@@ -1,6 +1,18 @@
 <template>
   <div class="video-manager">
     <div class="toolbar">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索作品..."
+        style="width: 200px; margin-right: 10px;"
+        clearable
+        @clear="handleSearch"
+        @keyup.enter="handleSearch"
+      >
+        <template #append>
+          <el-button @click="handleSearch"><el-icon><Search /></el-icon></el-button>
+        </template>
+      </el-input>
       <el-button type="primary" @click="handleCreate">上传视频</el-button>
       <el-button type="success" @click="handleBatchGenerateEmbedding" :loading="batchEmbeddingLoading">批量生成向量</el-button>
       <el-button type="warning" @click="handleBatchGenerateSummary" :loading="batchSummaryLoading">批量AI摘要</el-button>
@@ -117,12 +129,13 @@
 
 <script lang="ts">
 import VideoManagerScript from '../../scripts/views/admin/VideoManager';
-import { UploadFilled } from '@element-plus/icons-vue';
+import { UploadFilled, Search } from '@element-plus/icons-vue';
 
 export default {
   ...VideoManagerScript,
   components: {
-    UploadFilled
+    UploadFilled,
+    Search
   }
 };
 </script>

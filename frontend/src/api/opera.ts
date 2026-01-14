@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { OperaListResponse } from '../types';
+import type { OperaListResponse, OperaListItem } from '../types';
 
 const API_BASE_URL = '/api/v1';
 
@@ -20,3 +20,26 @@ export const getOperas = async (params: GetOperasParams = {}) => {
   );
   return response.data;
 };
+
+/**
+ * 根据ID获取单个作品详情
+ */
+export const getOperaById = async (id: number): Promise<{ code: number; data: OperaListItem }> => {
+  const response = await axios.get(`${API_BASE_URL}/operas/${id}`);
+  return response.data;
+};
+
+/**
+ * 批量获取作品详情
+ */
+export const getOperasByIds = async (ids: number[]): Promise<OperaListItem[]> => {
+  const requests = ids.map(id => getOperaById(id));
+  const responses = await Promise.allSettled(requests);
+  
+  return responses
+    .filter((result): result is PromiseFulfilledResult<{ code: number; data: OperaListItem }> => 
+      result.status === 'fulfilled' && result.value.code === 200
+    )
+    .map(result => result.value.data);
+};
+

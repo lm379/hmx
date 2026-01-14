@@ -132,6 +132,19 @@ export interface ArtistListResponse {
     }
 }
 
+// 搜索结果类型
+export interface OperaSearchResult {
+    opera_id: number;
+    opera_title: string;
+    artist_names: string[];
+    artist_ids: number[];
+}
+
+export interface ArtistSearchResult {
+    artist_id: number;
+    name: string;
+}
+
 export interface User {
     user_id: number;
     username: string;

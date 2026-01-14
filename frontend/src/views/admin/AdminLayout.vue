@@ -23,6 +23,12 @@
             </el-icon>
             <span>任务队列</span>
           </el-menu-item>
+          <el-menu-item index="/admin/search">
+            <el-icon>
+              <Search />
+            </el-icon>
+            <span>搜索管理</span>
+          </el-menu-item>
           <el-menu-item index="/admin/artists">
             <el-icon>
               <User />
@@ -76,7 +82,7 @@
 
 <script lang="ts">
 import AdminLayoutScript from '../../scripts/views/admin/AdminLayout';
-import { DataLine, VideoCamera, User, UserFilled, HomeFilled, CaretBottom, List } from '@element-plus/icons-vue';
+import { DataLine, VideoCamera, User, UserFilled, HomeFilled, CaretBottom, List, Search } from '@element-plus/icons-vue';
 
 export default {
   ...AdminLayoutScript,
@@ -87,7 +93,8 @@ export default {
     UserFilled,
     HomeFilled,
     CaretBottom,
-    List
+    List,
+    Search
   }
 };
 </script>

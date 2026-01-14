@@ -1,6 +1,18 @@
 <template>
   <div class="artist-manager">
     <div class="toolbar">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索艺术家..."
+        style="width: 200px; margin-right: 10px;"
+        clearable
+        @clear="handleSearch"
+        @keyup.enter="handleSearch"
+      >
+        <template #append>
+          <el-button @click="handleSearch"><el-icon><Search /></el-icon></el-button>
+        </template>
+      </el-input>
       <el-button type="primary" @click="handleCreate">添加艺术家</el-button>
     </div>
 
@@ -65,12 +77,13 @@
 
 <script lang="ts">
 import ArtistManagerScript from '../../scripts/views/admin/ArtistManager';
-import { UploadFilled } from '@element-plus/icons-vue';
+import { UploadFilled, Search } from '@element-plus/icons-vue';
 
 export default {
   ...ArtistManagerScript,
   components: {
-    UploadFilled
+    UploadFilled,
+    Search
   }
 };
 </script>

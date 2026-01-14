@@ -1,6 +1,8 @@
 import { defineComponent, ref, onMounted, reactive } from 'vue';
 import axios from 'axios';
 import { ElMessage, ElMessageBox, type UploadFile, type UploadInstance, type UploadProps } from 'element-plus';
+import { searchOperas } from '../../../api/search';
+import { getOperasByIds } from '../../../api/opera';
 
 export default defineComponent({
   name: 'VideoManager',
@@ -10,6 +12,7 @@ export default defineComponent({
     const pageSize = ref(10);
     const total = ref(0);
     const loading = ref(false);
+    const searchQuery = ref('');
     const videoUploadRef = ref<UploadInstance>();
     const avatarUploadRef = ref<UploadInstance>();
     const videoProgress = ref(0);
@@ -42,16 +45,52 @@ export default defineComponent({
     const fetchData = async () => {
       loading.value = true;
       try {
-        const res = await axios.get('/api/v1/admin/operas', {
-          params: { page: currentPage.value, page_size: pageSize.value }
-        });
-        tableData.value = res.data.data.list;
-        total.value = res.data.data.pagination.total;
+        if (searchQuery.value) {
+          // 使用搜索功能
+          const searchRes = await searchOperas({
+            query: searchQuery.value,
+            page: currentPage.value,
+            page_size: pageSize.value,
+          });
+          
+          total.value = searchRes.data.total;
+          
+          // 根据搜索结果的ID批量获取完整信息
+          if (searchRes.data.results.length > 0) {
+            const operaIds = searchRes.data.results.map(item => item.opera_id);
+            const fullOperas = await getOperasByIds(operaIds);
+            
+            // 添加加载状态字段
+            tableData.value = fullOperas.map(opera => ({
+              ...opera,
+              _embeddingLoading: false,
+              _summaryLoading: false
+            })) as any;
+          } else {
+            tableData.value = [];
+          }
+        } else {
+          // 使用管理API获取完整列表
+          const res = await axios.get('/api/v1/admin/operas', {
+            params: { page: currentPage.value, page_size: pageSize.value }
+          });
+          tableData.value = res.data.data.list.map((opera: any) => ({
+            ...opera,
+            _embeddingLoading: false,
+            _summaryLoading: false
+          }));
+          total.value = res.data.data.pagination.total;
+        }
       } catch (err) {
         ElMessage.error('获取列表失败');
       } finally {
         loading.value = false;
       }
+    };
+
+    const handleSearch = () => {
+      currentPage.value = 1;
+      fetchData();
     };
 
     const fetchArtists = async () => {
@@ -540,7 +579,9 @@ export default defineComponent({
       submitForm,
       videoFile,
       avatarFile,
-      forceRegenerate
+      forceRegenerate,
+      searchQuery,
+      handleSearch
     };
   }
 });

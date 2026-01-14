@@ -42,6 +42,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { showCategoryBar: true }
   },
   {
+    path: '/search',
+    name: 'Search',
+    component: () => import('../views/SearchView.vue'),
+    meta: { showCategoryBar: true }
+  },
+  {
     path: '/artist/:id',
     name: 'ArtistProfile',
     component: () => import('../views/ArtistProfileView.vue')
@@ -85,6 +91,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'tasks',
         name: '任务队列',
         component: () => import('../views/admin/TaskQueueView.vue')
+      },
+      {
+        path: 'search',
+        name: '搜索管理',
+        component: () => import('../views/admin/SearchManager.vue')
       }
     ]
   },

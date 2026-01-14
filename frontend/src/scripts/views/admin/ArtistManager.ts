@@ -1,6 +1,8 @@
 import { defineComponent, ref, onMounted, reactive } from 'vue';
 import axios from 'axios';
 import { ElMessage, ElMessageBox, type UploadFile, type UploadInstance, type UploadProps } from 'element-plus';
+import { searchArtists } from '../../../api/search';
+import { getArtistsByIds } from '../../../api/artist';
 
 export default defineComponent({
   name: 'ArtistManager',
@@ -10,6 +12,7 @@ export default defineComponent({
     const pageSize = ref(10);
     const total = ref(0);
     const loading = ref(false);
+    const searchQuery = ref('');
     const avatarUploadRef = ref<UploadInstance>();
     const uploadProgress = ref(0);
 
@@ -27,16 +30,41 @@ export default defineComponent({
     const fetchData = async () => {
       loading.value = true;
       try {
-        const res = await axios.get('/api/v1/artists', {
-          params: { page: currentPage.value, page_size: pageSize.value }
-        });
-        tableData.value = res.data.data.list;
-        total.value = res.data.data.pagination.total;
+        if (searchQuery.value) {
+          // 使用搜索功能
+          const searchRes = await searchArtists({
+            query: searchQuery.value,
+            page: currentPage.value,
+            page_size: pageSize.value
+          });
+          
+          total.value = searchRes.data.total;
+          
+          // 根据搜索结果的ID批量获取完整信息
+          if (searchRes.data.results.length > 0) {
+            const artistIds = searchRes.data.results.map(item => item.artist_id);
+            tableData.value = await getArtistsByIds(artistIds) as any;
+          } else {
+            tableData.value = [];
+          }
+        } else {
+          // 使用管理API获取完整列表
+          const res = await axios.get('/api/v1/artists', {
+            params: { page: currentPage.value, page_size: pageSize.value }
+          });
+          tableData.value = res.data.data.list;
+          total.value = res.data.data.pagination.total;
+        }
       } catch (err) {
         ElMessage.error('获取列表失败');
       } finally {
         loading.value = false;
       }
+    };
+
+    const handleSearch = () => {
+      currentPage.value = 1;
+      fetchData();
     };
 
     onMounted(() => {
@@ -234,7 +262,9 @@ export default defineComponent({
       handleExceed,
       handlePaste,
       submitForm,
-      avatarFile
+      avatarFile,
+      searchQuery,
+      handleSearch
     };
   }
 });

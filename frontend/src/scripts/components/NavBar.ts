@@ -1,4 +1,4 @@
-import { defineComponent, onMounted } from 'vue';
+import { defineComponent, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
@@ -9,6 +9,16 @@ export default defineComponent({
     const router = useRouter();
     const authStore = useAuthStore();
     const { isLoggedIn, user } = storeToRefs(authStore);
+    const searchQuery = ref('');
+
+    const handleSearch = () => {
+      if (searchQuery.value.trim()) {
+        router.push({
+          path: '/search',
+          query: { q: searchQuery.value.trim() }
+        });
+      }
+    };
 
     const handleLogout = async () => {
       await authStore.logout();
@@ -52,6 +62,8 @@ export default defineComponent({
     return {
       isLoggedIn,
       user,
+      searchQuery,
+      handleSearch,
       goHome,
       goLogin,
       goProfile,
