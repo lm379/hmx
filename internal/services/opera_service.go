@@ -3,12 +3,14 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lm379/hmx/internal/models"
+	"github.com/lm379/hmx/internal/queue"
 	"github.com/lm379/hmx/internal/repository"
 	"github.com/lm379/hmx/pkg/converter"
 	"github.com/lm379/hmx/pkg/pagination"
@@ -129,6 +131,51 @@ func CreateOpera(input models.CreateOperaRequest, userID uint) (gin.H, int) {
 		return gin.H{"error": "Failed to create opera record: " + err.Error()}, http.StatusInternalServerError
 	}
 
+	// 创建三个处理任务并加入队列
+	tasks := []struct {
+		Name string
+		Type queue.TaskType
+	}{
+		{"Transcode", queue.TaskTypeTranscode},
+		{"Subtitle", queue.TaskTypeSubtitle},
+		{"Cover", queue.TaskTypeCover},
+	}
+
+	for _, taskInfo := range tasks {
+		taskID := fmt.Sprintf("%s-%d", taskInfo.Type, newOpera.OperaID)
+		
+		// 检查是否存在临时任务（回调已提前到达）
+		tempExists, err := queue.GetTempTask(taskID)
+		if err != nil {
+			log.Printf("[%s Queue] Failed to check temp task for Opera ID %d: %v", taskInfo.Name, newOpera.OperaID, err)
+		}
+		
+		task := &queue.Task{
+			ID:      taskID,
+			Type:    taskInfo.Type,
+			OperaID: newOpera.OperaID,
+			Force:   false,
+		}
+		
+		if tempExists {
+			// 临时任务存在，说明回调已到达，直接标记为完成
+			log.Printf("[%s Queue] Temp task exists for Opera ID %d, creating as completed", taskInfo.Name, newOpera.OperaID)
+			task.Status = queue.TaskStatusCompleted
+			if err := queue.UpdateTask(task); err != nil {
+				log.Printf("[%s Queue] Failed to create completed task for Opera ID %d: %v", taskInfo.Name, newOpera.OperaID, err)
+			}
+			// 删除临时任务
+			queue.DeleteTempTask(taskID)
+		} else {
+			// 正常创建任务
+			if err := queue.EnqueueTask(task); err != nil {
+				log.Printf("[%s Queue] Failed to enqueue task for Opera ID %d: %v", taskInfo.Name, newOpera.OperaID, err)
+			} else {
+				log.Printf("[%s Queue] Task enqueued for Opera ID %d", taskInfo.Name, newOpera.OperaID)
+			}
+		}
+	}
+
 	return gin.H{"message": "Opera created successfully", "opera_id": newOpera.OperaID}, http.StatusCreated
 }
 
@@ -164,6 +211,53 @@ func UpdateOpera(operaID uint, input models.UpdateOperaRequest) (gin.H, int) {
 	if len(updates) > 0 {
 		if err := operaRepo.Update(operaID, updates); err != nil {
 			return gin.H{"error": "Failed to update opera"}, http.StatusInternalServerError
+		}
+	}
+
+	// 如果更新了视频路径，创建处理任务
+	if input.VideoPath != "" {
+		tasks := []struct {
+			Name string
+			Type queue.TaskType
+		}{
+			{"Transcode", queue.TaskTypeTranscode},
+			{"Subtitle", queue.TaskTypeSubtitle},
+			{"Cover", queue.TaskTypeCover},
+		}
+
+		for _, taskInfo := range tasks {
+			taskID := fmt.Sprintf("%s-%d", taskInfo.Type, operaID)
+			
+			// 检查是否存在临时任务（回调已提前到达）
+			tempExists, err := queue.GetTempTask(taskID)
+			if err != nil {
+				log.Printf("[%s Queue] Failed to check temp task for Opera ID %d: %v", taskInfo.Name, operaID, err)
+			}
+			
+			task := &queue.Task{
+				ID:      taskID,
+				Type:    taskInfo.Type,
+				OperaID: operaID,
+				Force:   false,
+			}
+			
+			if tempExists {
+				// 临时任务存在，说明回调已到达，直接标记为完成
+				log.Printf("[%s Queue] Temp task exists for Opera ID %d, creating as completed", taskInfo.Name, operaID)
+				task.Status = queue.TaskStatusCompleted
+				if err := queue.UpdateTask(task); err != nil {
+					log.Printf("[%s Queue] Failed to create completed task for Opera ID %d: %v", taskInfo.Name, operaID, err)
+				}
+				// 删除临时任务
+				queue.DeleteTempTask(taskID)
+			} else {
+				// 正常创建任务
+				if err := queue.EnqueueTask(task); err != nil {
+					log.Printf("[%s Queue] Failed to enqueue task for Opera ID %d: %v", taskInfo.Name, operaID, err)
+				} else {
+					log.Printf("[%s Queue] Task enqueued for Opera ID %d", taskInfo.Name, operaID)
+				}
+			}
 		}
 	}
 
@@ -304,6 +398,43 @@ func HandleTranscodeCallback(callback models.TencentCloudCallbackRequest) (gin.H
 	if len(updates) > 0 {
 		if err := operaRepo.Update(opera.OperaID, updates); err != nil {
 			return gin.H{"error": "Failed to update opera after callback"}, http.StatusInternalServerError
+		}
+	}
+
+	// 根据任务类型更新对应的队列任务状态
+	var taskType queue.TaskType
+	var taskName string
+
+	switch job.Tag {
+	case "Transcode":
+		taskType = queue.TaskTypeTranscode
+		taskName = "Transcode"
+	case "SpeechRecognition":
+		taskType = queue.TaskTypeSubtitle
+		taskName = "Subtitle"
+	case "SmartCover":
+		taskType = queue.TaskTypeCover
+		taskName = "Cover"
+	}
+
+	if taskType != "" {
+		taskID := fmt.Sprintf("%s-%d", taskType, opera.OperaID)
+		task, err := queue.GetTask(taskID)
+		
+		if err != nil || task == nil {
+			// 任务不存在，可能是回调比队列创建更快，保存为临时任务
+			log.Printf("[%s Queue] Task not found for Opera ID %d, saving as temp task", taskName, opera.OperaID)
+			if err := queue.SaveTempTask(taskID); err != nil {
+				log.Printf("[%s Queue] Failed to save temp task for Opera ID %d: %v", taskName, opera.OperaID, err)
+			}
+		} else {
+			// 任务存在，更新为已完成
+			task.Status = queue.TaskStatusCompleted
+			if err := queue.UpdateTask(task); err != nil {
+				log.Printf("[%s Queue] Failed to update task status for Opera ID %d: %v", taskName, opera.OperaID, err)
+			} else {
+				log.Printf("[%s Queue] Task completed for Opera ID %d", taskName, opera.OperaID)
+			}
 		}
 	}
 

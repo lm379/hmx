@@ -20,6 +20,9 @@ type TaskType string
 const (
 	TaskTypeEmbedding TaskType = "embedding"
 	TaskTypeSummary   TaskType = "summary"
+	TaskTypeTranscode TaskType = "transcode" // 视频转码任务
+	TaskTypeSubtitle  TaskType = "subtitle"  // 字幕生成任务
+	TaskTypeCover     TaskType = "cover"     // 封面生成任务
 )
 
 // TaskStatus 任务状态
@@ -61,10 +64,14 @@ const (
 	// 队列名称
 	QueueEmbedding = "queue:embedding"
 	QueueSummary   = "queue:summary"
+	QueueTranscode = "queue:transcode"
+	QueueSubtitle  = "queue:subtitle"
+	QueueCover     = "queue:cover"
 
 	// 任务状态键前缀
 	TaskKeyPrefix      = "task:"
 	BatchTaskKeyPrefix = "batch_task:"
+	TempTaskKeyPrefix  = "temp_task:" // 临时任务前缀（用于暂存提前到达的回调）
 )
 
 // EnqueueTask 将任务加入队列
@@ -80,7 +87,7 @@ func EnqueueTask(task *Task) error {
 		return err
 	}
 
-	if err := database.RDBQueue.Set(ctx, taskKey, taskJSON, 24*time.Hour).Err(); err != nil {
+	if err := database.RDBQueue.Set(ctx, taskKey, taskJSON, 7*24*time.Hour).Err(); err != nil {
 		return err
 	}
 
@@ -138,7 +145,7 @@ func UpdateTask(task *Task) error {
 		return err
 	}
 
-	return database.RDBQueue.Set(ctx, taskKey, taskJSON, 24*time.Hour).Err()
+	return database.RDBQueue.Set(ctx, taskKey, taskJSON, 7*24*time.Hour).Err()
 }
 
 // CreateBatchTask 创建批量任务
@@ -153,7 +160,7 @@ func CreateBatchTask(batchTask *BatchTask) error {
 		return err
 	}
 
-	return database.RDBQueue.Set(ctx, batchKey, batchJSON, 24*time.Hour).Err()
+	return database.RDBQueue.Set(ctx, batchKey, batchJSON, 7*24*time.Hour).Err()
 }
 
 // GetBatchTask 获取批量任务详情
@@ -196,7 +203,7 @@ func UpdateBatchTask(batchTask *BatchTask) error {
 		return err
 	}
 
-	return database.RDBQueue.Set(ctx, batchKey, batchJSON, 24*time.Hour).Err()
+	return database.RDBQueue.Set(ctx, batchKey, batchJSON, 7*24*time.Hour).Err()
 }
 
 // getQueueName 根据任务类型获取队列名称
@@ -206,6 +213,12 @@ func getQueueName(taskType TaskType) string {
 		return QueueEmbedding
 	case TaskTypeSummary:
 		return QueueSummary
+	case TaskTypeTranscode:
+		return QueueTranscode
+	case TaskTypeSubtitle:
+		return QueueSubtitle
+	case TaskTypeCover:
+		return QueueCover
 	default:
 		return ""
 	}
@@ -306,4 +319,30 @@ func GetCompletedTasks(taskType TaskType) ([]*Task, error) {
 	}
 
 	return tasks, nil
+}
+
+// SaveTempTask 保存临时任务（用于暂存提前到达的回调，TTL 5分钟）
+func SaveTempTask(taskID string) error {
+	tempKey := TempTaskKeyPrefix + taskID
+	// 只需要标记存在即可，值可以是简单的时间戳
+	return database.RDBQueue.Set(ctx, tempKey, time.Now().Unix(), 5*time.Minute).Err()
+}
+
+// GetTempTask 检查临时任务是否存在
+func GetTempTask(taskID string) (bool, error) {
+	tempKey := TempTaskKeyPrefix + taskID
+	_, err := database.RDBQueue.Get(ctx, tempKey).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil // 不存在
+		}
+		return false, err
+	}
+	return true, nil // 存在
+}
+
+// DeleteTempTask 删除临时任务
+func DeleteTempTask(taskID string) error {
+	tempKey := TempTaskKeyPrefix + taskID
+	return database.RDBQueue.Del(ctx, tempKey).Err()
 }

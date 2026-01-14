@@ -36,6 +36,39 @@
             </el-col>
         </el-row>
 
+        <el-row :gutter="20" class="task-queue-statistics" style="margin-top: 15px;">
+            <el-col :span="4">
+                <el-statistic title="转码 - 进行中" :value="transcodeStats.active">
+                    <template #suffix>个</template>
+                </el-statistic>
+            </el-col>
+            <el-col :span="4">
+                <el-statistic title="转码 - 总计" :value="transcodeStats.total">
+                    <template #suffix>个</template>
+                </el-statistic>
+            </el-col>
+            <el-col :span="4">
+                <el-statistic title="字幕 - 进行中" :value="subtitleStats.active">
+                    <template #suffix>个</template>
+                </el-statistic>
+            </el-col>
+            <el-col :span="4">
+                <el-statistic title="字幕 - 总计" :value="subtitleStats.total">
+                    <template #suffix>个</template>
+                </el-statistic>
+            </el-col>
+            <el-col :span="4">
+                <el-statistic title="封面 - 进行中" :value="coverStats.active">
+                    <template #suffix>个</template>
+                </el-statistic>
+            </el-col>
+            <el-col :span="4">
+                <el-statistic title="封面 - 总计" :value="coverStats.total">
+                    <template #suffix>个</template>
+                </el-statistic>
+            </el-col>
+        </el-row>
+
         <el-tabs type="border-card">
             <el-tab-pane label="向量生成任务">
                 <template #label>
@@ -54,7 +87,7 @@
                 <div v-if="queueStatus.processing_embedding_tasks.length > 0" class="task-section">
                     <el-divider content-position="left" class="task-divider">
                         <el-tag type="success" size="small">正在处理 ({{ queueStatus.processing_embedding_tasks.length
-                        }})</el-tag>
+                            }})</el-tag>
                     </el-divider>
                     <el-table :data="queueStatus.processing_embedding_tasks" size="small" stripe>
                         <el-table-column prop="opera_id" label="视频ID" width="100" />
@@ -98,7 +131,7 @@
                 <div v-if="queueStatus.completed_embedding_tasks.length > 0" class="task-section">
                     <el-divider content-position="left" class="task-divider">
                         <el-tag type="primary" size="small">已完成 ({{ queueStatus.completed_embedding_tasks.length
-                        }})</el-tag>
+                            }})</el-tag>
                     </el-divider>
                     <el-table :data="queueStatus.completed_embedding_tasks" size="small" stripe>
                         <el-table-column prop="opera_id" label="视频ID" width="100" />
@@ -141,7 +174,7 @@
                 <div v-if="queueStatus.processing_summary_tasks.length > 0" class="task-section">
                     <el-divider content-position="left" class="task-divider">
                         <el-tag type="success" size="small">正在处理 ({{ queueStatus.processing_summary_tasks.length
-                        }})</el-tag>
+                            }})</el-tag>
                     </el-divider>
                     <el-table :data="queueStatus.processing_summary_tasks" size="small" stripe>
                         <el-table-column prop="opera_id" label="视频ID" width="100" />
@@ -185,7 +218,7 @@
                 <div v-if="queueStatus.completed_summary_tasks.length > 0" class="task-section">
                     <el-divider content-position="left" class="task-divider">
                         <el-tag type="primary" size="small">已完成 ({{ queueStatus.completed_summary_tasks.length
-                        }})</el-tag>
+                            }})</el-tag>
                     </el-divider>
                     <el-table :data="queueStatus.completed_summary_tasks" size="small" stripe>
                         <el-table-column prop="opera_id" label="视频ID" width="100" />
@@ -209,6 +242,267 @@
                 <el-empty
                     v-if="queueStatus.pending_summary_tasks.length === 0 && queueStatus.processing_summary_tasks.length === 0 && queueStatus.completed_summary_tasks.length === 0"
                     description="暂无摘要生成任务" :image-size="80" />
+            </el-tab-pane>
+
+            <el-tab-pane label="视频转码任务">
+                <template #label>
+                    <span>
+                        <el-icon>
+                            <VideoPlay />
+                        </el-icon>
+                        视频转码
+                        <el-badge
+                            v-if="queueStatus.pending_transcode_tasks.length + queueStatus.processing_transcode_tasks.length > 0"
+                            :value="queueStatus.pending_transcode_tasks.length + queueStatus.processing_transcode_tasks.length"
+                            class="item" />
+                    </span>
+                </template>
+
+                <div v-if="queueStatus.processing_transcode_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="success" size="small">正在处理 ({{ queueStatus.processing_transcode_tasks.length
+                            }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.processing_transcode_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column prop="updated_at" label="更新时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default>
+                                <el-tag type="success" size="small">
+                                    <el-icon class="is-loading">
+                                        <Loading />
+                                    </el-icon> 处理中
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="queueStatus.pending_transcode_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="info" size="small">等待中 ({{ queueStatus.pending_transcode_tasks.length }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.pending_transcode_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default>
+                                <el-tag type="info" size="small">等待中</el-tag>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="queueStatus.completed_transcode_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="primary" size="small">已完成 ({{ queueStatus.completed_transcode_tasks.length
+                            }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.completed_transcode_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column prop="updated_at" label="完成时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default="{ row }">
+                                <el-tag v-if="row.status === 'completed'" type="success" size="small">成功</el-tag>
+                                <el-tag v-else-if="row.status === 'failed'" type="danger" size="small">失败</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="error" label="错误信息" show-overflow-tooltip />
+                    </el-table>
+                </div>
+
+                <el-empty
+                    v-if="queueStatus.pending_transcode_tasks.length === 0 && queueStatus.processing_transcode_tasks.length === 0 && queueStatus.completed_transcode_tasks.length === 0"
+                    description="暂无视频转码任务" :image-size="80" />
+            </el-tab-pane>
+
+            <el-tab-pane label="字幕生成任务">
+                <template #label>
+                    <span>
+                        <el-icon>
+                            <ChatLineSquare />
+                        </el-icon>
+                        字幕生成
+                        <el-badge
+                            v-if="queueStatus.pending_subtitle_tasks.length + queueStatus.processing_subtitle_tasks.length > 0"
+                            :value="queueStatus.pending_subtitle_tasks.length + queueStatus.processing_subtitle_tasks.length"
+                            class="item" />
+                    </span>
+                </template>
+
+                <div v-if="queueStatus.processing_subtitle_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="success" size="small">正在处理 ({{ queueStatus.processing_subtitle_tasks.length
+                            }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.processing_subtitle_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column prop="updated_at" label="更新时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default>
+                                <el-tag type="success" size="small">
+                                    <el-icon class="is-loading">
+                                        <Loading />
+                                    </el-icon> 处理中
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="queueStatus.pending_subtitle_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="info" size="small">等待中 ({{ queueStatus.pending_subtitle_tasks.length }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.pending_subtitle_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default>
+                                <el-tag type="info" size="small">等待中</el-tag>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="queueStatus.completed_subtitle_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="primary" size="small">已完成 ({{ queueStatus.completed_subtitle_tasks.length
+                            }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.completed_subtitle_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column prop="updated_at" label="完成时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default="{ row }">
+                                <el-tag v-if="row.status === 'completed'" type="success" size="small">成功</el-tag>
+                                <el-tag v-else-if="row.status === 'failed'" type="danger" size="small">失败</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="error" label="错误信息" show-overflow-tooltip />
+                    </el-table>
+                </div>
+
+                <el-empty
+                    v-if="queueStatus.pending_subtitle_tasks.length === 0 && queueStatus.processing_subtitle_tasks.length === 0 && queueStatus.completed_subtitle_tasks.length === 0"
+                    description="暂无字幕生成任务" :image-size="80" />
+            </el-tab-pane>
+
+            <el-tab-pane label="封面生成任务">
+                <template #label>
+                    <span>
+                        <el-icon>
+                            <Picture />
+                        </el-icon>
+                        封面生成
+                        <el-badge
+                            v-if="queueStatus.pending_cover_tasks.length + queueStatus.processing_cover_tasks.length > 0"
+                            :value="queueStatus.pending_cover_tasks.length + queueStatus.processing_cover_tasks.length"
+                            class="item" />
+                    </span>
+                </template>
+
+                <div v-if="queueStatus.processing_cover_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="success" size="small">正在处理 ({{ queueStatus.processing_cover_tasks.length
+                            }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.processing_cover_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column prop="updated_at" label="更新时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default>
+                                <el-tag type="success" size="small">
+                                    <el-icon class="is-loading">
+                                        <Loading />
+                                    </el-icon> 处理中
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="queueStatus.pending_cover_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="info" size="small">等待中 ({{ queueStatus.pending_cover_tasks.length }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.pending_cover_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default>
+                                <el-tag type="info" size="small">等待中</el-tag>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+
+                <div v-if="queueStatus.completed_cover_tasks.length > 0" class="task-section">
+                    <el-divider content-position="left" class="task-divider">
+                        <el-tag type="primary" size="small">已完成 ({{ queueStatus.completed_cover_tasks.length
+                            }})</el-tag>
+                    </el-divider>
+                    <el-table :data="queueStatus.completed_cover_tasks" size="small" stripe>
+                        <el-table-column prop="opera_id" label="视频ID" width="100" />
+                        <el-table-column prop="id" label="任务ID" show-overflow-tooltip />
+                        <el-table-column prop="created_at" label="创建时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+                        </el-table-column>
+                        <el-table-column prop="updated_at" label="完成时间" width="180">
+                            <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
+                        </el-table-column>
+                        <el-table-column label="状态" width="100">
+                            <template #default="{ row }">
+                                <el-tag v-if="row.status === 'completed'" type="success" size="small">成功</el-tag>
+                                <el-tag v-else-if="row.status === 'failed'" type="danger" size="small">失败</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="error" label="错误信息" show-overflow-tooltip />
+                    </el-table>
+                </div>
+
+                <el-empty
+                    v-if="queueStatus.pending_cover_tasks.length === 0 && queueStatus.processing_cover_tasks.length === 0 && queueStatus.completed_cover_tasks.length === 0"
+                    description="暂无封面生成任务" :image-size="80" />
             </el-tab-pane>
         </el-tabs>
     </el-card>
