@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -41,6 +42,12 @@ func CreateArtist(input models.CreateArtistRequest) (gin.H, int) {
 		return gin.H{"error": "Failed to create artist: " + err.Error()}, http.StatusInternalServerError
 	}
 
+	// 同步到 Meilisearch
+	searchService := NewSearchService()
+	if err := searchService.IndexArtist(&artist); err != nil {
+		log.Printf("Warning: Failed to index artist %d to Meilisearch: %v", artist.ArtistID, err)
+	}
+
 	return gin.H{"message": "Artist created successfully", "artist_id": artist.ArtistID}, http.StatusCreated
 }
 
@@ -72,6 +79,15 @@ func UpdateArtist(id uint, input models.UpdateArtistRequest) (gin.H, int) {
 		}
 	}
 
+	// 更新成功后，同步到 Meilisearch
+	updatedArtist, err := artistRepo.GetByID(id)
+	if err == nil {
+		searchService := NewSearchService()
+		if err := searchService.UpdateArtistIndex(updatedArtist); err != nil {
+			log.Printf("Warning: Failed to update artist %d in Meilisearch: %v", id, err)
+		}
+	}
+
 	return gin.H{"message": "Artist updated successfully"}, http.StatusOK
 }
 
@@ -80,5 +96,12 @@ func DeleteArtist(id uint) (gin.H, int) {
 	if err := artistRepo.Delete(id); err != nil {
 		return gin.H{"error": "Failed to delete artist"}, http.StatusInternalServerError
 	}
+
+	// 从 Meilisearch 删除
+	searchService := NewSearchService()
+	if err := searchService.DeleteArtistIndex(id); err != nil {
+		log.Printf("Warning: Failed to delete artist %d from Meilisearch: %v", id, err)
+	}
+
 	return gin.H{"message": "Artist deleted successfully"}, http.StatusOK
 }

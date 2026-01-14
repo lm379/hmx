@@ -48,6 +48,10 @@ type Config struct {
 	SubtitleAPIKey  string `mapstructure:"SUBTITLE_API_KEY"`
 	SubtitleBaseURL string `mapstructure:"SUBTITLE_BASE_URL"`
 	SubtitleModel   string `mapstructure:"SUBTITLE_MODEL"`
+
+	// Meilisearch 配置
+	MeilisearchHost   string `mapstructure:"MEILISEARCH_HOST"`
+	MeilisearchAPIKey string `mapstructure:"MEILISEARCH_API_KEY"`
 }
 
 var AppConfig Config
@@ -72,6 +76,10 @@ func LoadConfig() {
 	viper.SetDefault("EMBEDDING_MODEL", "text-embedding-3-small")
 	viper.SetDefault("SUBTITLE_BASE_URL", "https://api.openai.com/v1")
 	viper.SetDefault("SUBTITLE_MODEL", "gpt-4.1")
+
+	// Meilisearch 默认配置
+	viper.SetDefault("MEILISEARCH_HOST", "http://localhost:7700")
+	viper.SetDefault("MEILISEARCH_API_KEY", "")
 
 	AppConfig.S3PresignExpires = viper.GetDuration("S3_PRESIGN_EXPIRES_IN_MINUTES") * time.Minute
 	AppConfig.JWTAccessTokenExpiresIn = viper.GetDuration("JWT_ACCESS_TOKEN_EXPIRES_IN")

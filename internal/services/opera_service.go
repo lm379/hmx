@@ -131,6 +131,12 @@ func CreateOpera(input models.CreateOperaRequest, userID uint) (gin.H, int) {
 		return gin.H{"error": "Failed to create opera record: " + err.Error()}, http.StatusInternalServerError
 	}
 
+	// 同步到 Meilisearch
+	searchService := NewSearchService()
+	if err := searchService.IndexOpera(&newOpera); err != nil {
+		log.Printf("Warning: Failed to index opera %d to Meilisearch: %v", newOpera.OperaID, err)
+	}
+
 	// 创建三个处理任务并加入队列
 	tasks := []struct {
 		Name string
@@ -288,6 +294,15 @@ func UpdateOpera(operaID uint, input models.UpdateOperaRequest) (gin.H, int) {
 		}
 	}
 
+	// 更新成功后，同步到 Meilisearch
+	updatedOpera, err := operaRepo.GetByID(operaID)
+	if err == nil {
+		searchService := NewSearchService()
+		if err := searchService.UpdateOperaIndex(updatedOpera); err != nil {
+			log.Printf("Warning: Failed to update opera %d in Meilisearch: %v", operaID, err)
+		}
+	}
+
 	return gin.H{"message": "Opera updated successfully"}, http.StatusOK
 }
 
@@ -318,6 +333,12 @@ func DeleteOpera(operaID uint) (gin.H, int) {
 
 	if err := operaRepo.Delete(operaID); err != nil {
 		return gin.H{"error": "Failed to delete opera"}, http.StatusInternalServerError
+	}
+
+	// 从 Meilisearch 删除
+	searchService := NewSearchService()
+	if err := searchService.DeleteOperaIndex(operaID); err != nil {
+		log.Printf("Warning: Failed to delete opera %d from Meilisearch: %v", operaID, err)
 	}
 
 	return gin.H{"message": "Opera deleted successfully"}, http.StatusOK

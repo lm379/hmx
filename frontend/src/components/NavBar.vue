@@ -8,8 +8,13 @@
 
       <!-- Center: Search -->
       <div class="search-bar">
-        <input type="text" placeholder="搜索感兴趣的内容" />
-        <button class="search-btn">
+        <input 
+          type="text" 
+          v-model="searchQuery"
+          @keyup.enter="handleSearch"
+          placeholder="搜索你感兴趣的内容" 
+        />
+        <button class="search-btn" @click="handleSearch">
           <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
             stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>

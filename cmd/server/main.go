@@ -14,6 +14,7 @@ import (
 	api "github.com/lm379/hmx/internal/api/v1"
 	"github.com/lm379/hmx/internal/queue"
 	"github.com/lm379/hmx/internal/services"
+	"github.com/lm379/hmx/pkg/search"
 )
 
 //go:embed static
@@ -25,6 +26,11 @@ func main() {
 
 	database.InitDB()
 	database.InitRedis()
+
+	// 初始化 Meilisearch 索引
+	if err := search.InitializeIndexes(); err != nil {
+		log.Printf("Warning: Failed to initialize Meilisearch indexes: %v", err)
+	}
 
 	// 启动Worker
 	workers := queue.StartWorkers()

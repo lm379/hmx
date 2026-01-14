@@ -206,3 +206,10 @@ func (r *OperaRepo) CountVisible() (int64, error) {
 	err := r.getDB().Model(&models.Opera{}).Where("is_hidden = ?", false).Count(&count).Error
 	return count, err
 }
+
+// GetAllForIndex 获取所有作品用于索引（包括隐藏的）
+func (r *OperaRepo) GetAllForIndex() ([]models.Opera, error) {
+	var operas []models.Opera
+	err := r.getDB().Preload("Artists").Find(&operas).Error
+	return operas, err
+}

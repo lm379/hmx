@@ -90,6 +90,13 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			recommendations.GET("/", middleware.TryAuthMiddleware(), HandleGetRecommendations) // 个性化推荐（支持游客）
 		}
 
+		// 搜索路由 (Search)
+		search := v1.Group("/search")
+		{
+			search.GET("/operas", HandleSearchOperas)   // 搜索作品
+			search.GET("/artists", HandleSearchArtists) // 搜索艺术家
+		}
+
 		// 管理员路由 (Admin)
 		admin := v1.Group("/admin")
 		admin.Use(middleware.AuthMiddleware())
@@ -116,6 +123,14 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			admin.DELETE("/artists/:id", HandleAdminDeleteArtist)
 			admin.GET("/users", HandleAdminGetUsers)
 			admin.PUT("/users/:id/role", HandleAdminUpdateUserRole)
+
+			// 搜索管理路由
+			adminSearch := admin.Group("/search")
+			{
+				adminSearch.POST("/reindex/operas", HandleReindexOperas)   // 重新索引所有作品
+				adminSearch.POST("/reindex/artists", HandleReindexArtists) // 重新索引所有艺术家
+				adminSearch.GET("/stats", HandleGetSearchStats)            // 获取搜索统计
+			}
 		}
 	}
 

@@ -1,0 +1,64 @@
+.search-manager {
+  padding: 20px;
+}
+
+.header-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.index-status {
+  margin-top: 8px;
+}
+
+.action-card {
+  margin-bottom: 20px;
+}
+
+.operation-card {
+  height: 100%;
+}
+
+.operation-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.operation-icon {
+  color: #409eff;
+  margin-bottom: 16px;
+}
+
+.operation-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.operation-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+.batch-operations {
+  text-align: center;
+}
+
+.batch-operations h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+}

@@ -75,3 +75,10 @@ func (r *ArtistRepo) FindByName(name string) (*models.Artist, error) {
 	}
 	return &artist, nil
 }
+
+// GetAllForIndex 获取所有艺术家用于索引
+func (r *ArtistRepo) GetAllForIndex() ([]models.Artist, error) {
+	var artists []models.Artist
+	err := r.getDB().Find(&artists).Error
+	return artists, err
+}
