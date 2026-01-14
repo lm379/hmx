@@ -91,12 +91,14 @@ func initOperaIndex(client meilisearch.ServiceManager) error {
 
 	index := client.Index(indexName)
 
-	// 配置可搜索属性：包含中文和拼音字段
+	// 配置可搜索属性：包含中文、拼音和分词字段
 	attrs := []string{
 		"opera_title",
-		"opera_title_py",  // 拼音搜索
+		"opera_title_tokens", // 分词搜索（优先用于模糊匹配）
+		"opera_title_py",     // 拼音搜索
 		"artist_names",
-		"artist_names_py", // 艺术家拼音搜索
+		"artist_names_tokens", // 艺术家分词搜索
+		"artist_names_py",     // 艺术家拼音搜索
 	}
 	_, err = index.UpdateSearchableAttributes(&attrs)
 	if err != nil {
@@ -132,8 +134,8 @@ func initOperaIndex(client meilisearch.ServiceManager) error {
 			OneTypo:  1, // 中文通常是单字或双字，1个字符就允许1个拼写错误
 			TwoTypos: 3, // 3个字符以上允许2个拼写错误
 		},
-		DisableOnWords:      []string{},  // 不禁用任何词
-		DisableOnAttributes: []string{},  // 不禁用任何属性
+		DisableOnWords:      []string{}, // 不禁用任何词
+		DisableOnAttributes: []string{}, // 不禁用任何属性
 	}
 	_, err = index.UpdateTypoTolerance(typoToleranceSettings)
 	if err != nil {
@@ -143,12 +145,12 @@ func initOperaIndex(client meilisearch.ServiceManager) error {
 
 	// 配置搜索策略 - 优先精确匹配，然后是模糊匹配
 	rankingRules := []string{
-		"words",      // 匹配的词数
-		"typo",       // 拼写错误数（越少越好）
-		"proximity",  // 词之间的距离
-		"attribute",  // 字段权重
-		"sort",       // 排序
-		"exactness",  // 精确度
+		"words",     // 匹配的词数
+		"typo",      // 拼写错误数（越少越好）
+		"proximity", // 词之间的距离
+		"attribute", // 字段权重
+		"sort",      // 排序
+		"exactness", // 精确度
 	}
 	_, err = index.UpdateRankingRules(&rankingRules)
 	if err != nil {
@@ -180,10 +182,11 @@ func initArtistIndex(client meilisearch.ServiceManager) error {
 
 	index := client.Index(indexName)
 
-	// 配置可搜索属性：包含中文和拼音字段
+	// 配置可搜索属性：包含中文、拼音和分词字段
 	artistAttrs := []string{
 		"name",
-		"name_py", // 拼音搜索
+		"name_tokens", // 分词搜索（优先用于模糊匹配）
+		"name_py",     // 拼音搜索
 	}
 	_, err = index.UpdateSearchableAttributes(&artistAttrs)
 	if err != nil {

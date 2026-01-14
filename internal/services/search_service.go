@@ -28,19 +28,22 @@ func NewSearchService() *SearchService {
 
 // OperaSearchDocument Opera 搜索文档结构
 type OperaSearchDocument struct {
-	OperaID       uint     `json:"opera_id"`
-	OperaTitle    string   `json:"opera_title"`
-	OperaTitlePY  string   `json:"opera_title_py"` // 拼音字段
-	ArtistNames   []string `json:"artist_names"`
-	ArtistNamesPY []string `json:"artist_names_py"` // 艺术家名字拼音
-	ArtistIDs     []uint   `json:"artist_ids"`
+	OperaID           uint     `json:"opera_id"`
+	OperaTitle        string   `json:"opera_title"`
+	OperaTitlePY      string   `json:"opera_title_py"`     // 拼音字段
+	OperaTitleTokens  string   `json:"opera_title_tokens"` // 分词字段（用于模糊搜索）
+	ArtistNames       []string `json:"artist_names"`
+	ArtistNamesPY     []string `json:"artist_names_py"`     // 艺术家名字拼音
+	ArtistNamesTokens []string `json:"artist_names_tokens"` // 艺术家名字分词
+	ArtistIDs         []uint   `json:"artist_ids"`
 }
 
 // ArtistSearchDocument Artist 搜索文档结构
 type ArtistSearchDocument struct {
-	ArtistID uint   `json:"artist_id"`
-	Name     string `json:"name"`
-	NamePY   string `json:"name_py"` // 拼音字段
+	ArtistID   uint   `json:"artist_id"`
+	Name       string `json:"name"`
+	NamePY     string `json:"name_py"`     // 拼音字段
+	NameTokens string `json:"name_tokens"` // 分词字段（用于模糊搜索）
 }
 
 // SearchOperasRequest 搜索 Opera 请求
@@ -308,8 +311,8 @@ func (s *SearchService) ReindexAllOperas() error {
 
 	index := client.Index("operas")
 
-	// 分批处理，每批50条
-	batchSize := 50
+	// 分批处理，每批10条
+	batchSize := 10
 	totalBatches := (len(operas) + batchSize - 1) / batchSize
 
 	for i := 0; i < len(operas); i += batchSize {
@@ -387,19 +390,22 @@ func (s *SearchService) ReindexAllArtists() error {
 // operaToSearchDocument 将 Opera 模型转换为搜索文档
 func (s *SearchService) operaToSearchDocument(opera *models.Opera) OperaSearchDocument {
 	doc := OperaSearchDocument{
-		OperaID:      opera.OperaID,
-		OperaTitle:   opera.OperaTitle,
-		OperaTitlePY: pinyin.ToPinyin(opera.OperaTitle), // 添加拼音
+		OperaID:          opera.OperaID,
+		OperaTitle:       opera.OperaTitle,
+		OperaTitlePY:     pinyin.ToPinyin(opera.OperaTitle),        // 添加拼音
+		OperaTitleTokens: pinyin.TokenizeChinese(opera.OperaTitle), // 添加分词
 	}
 
 	// 提取艺术家信息
 	if len(opera.Artists) > 0 {
 		doc.ArtistNames = make([]string, len(opera.Artists))
 		doc.ArtistNamesPY = make([]string, len(opera.Artists))
+		doc.ArtistNamesTokens = make([]string, len(opera.Artists))
 		doc.ArtistIDs = make([]uint, len(opera.Artists))
 		for i, artist := range opera.Artists {
 			doc.ArtistNames[i] = artist.Name
-			doc.ArtistNamesPY[i] = pinyin.ToPinyin(artist.Name) // 添加拼音
+			doc.ArtistNamesPY[i] = pinyin.ToPinyin(artist.Name)            // 添加拼音
+			doc.ArtistNamesTokens[i] = pinyin.TokenizeChinese(artist.Name) // 添加分词
 			doc.ArtistIDs[i] = artist.ArtistID
 		}
 	}
@@ -410,9 +416,10 @@ func (s *SearchService) operaToSearchDocument(opera *models.Opera) OperaSearchDo
 // artistToSearchDocument 将 Artist 模型转换为搜索文档
 func (s *SearchService) artistToSearchDocument(artist *models.Artist) ArtistSearchDocument {
 	return ArtistSearchDocument{
-		ArtistID: artist.ArtistID,
-		Name:     artist.Name,
-		NamePY:   pinyin.ToPinyin(artist.Name), // 添加拼音
+		ArtistID:   artist.ArtistID,
+		Name:       artist.Name,
+		NamePY:     pinyin.ToPinyin(artist.Name),        // 添加拼音
+		NameTokens: pinyin.TokenizeChinese(artist.Name), // 添加分词
 	}
 }
 
