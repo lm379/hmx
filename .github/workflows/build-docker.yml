@@ -80,10 +80,8 @@ jobs:
             # swr.cn-southwest-2.myhuaweicloud.com/${{ github.repository_owner }}/hmx
             # docker.cnb.cool/${{ github.repository_owner }}/hmx
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ steps.version.outputs.is_latest }}
             type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable=${{ steps.version.outputs.is_latest }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
