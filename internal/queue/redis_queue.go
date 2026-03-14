@@ -18,11 +18,12 @@ var (
 type TaskType string
 
 const (
-	TaskTypeEmbedding TaskType = "embedding"
-	TaskTypeSummary   TaskType = "summary"
-	TaskTypeTranscode TaskType = "transcode" // 视频转码任务
-	TaskTypeSubtitle  TaskType = "subtitle"  // 字幕生成任务
-	TaskTypeCover     TaskType = "cover"     // 封面生成任务
+	TaskTypeEmbedding         TaskType = "embedding"
+	TaskTypeSummary           TaskType = "summary"
+	TaskTypeTranscode         TaskType = "transcode"          // 视频转码任务
+	TaskTypeSubtitle          TaskType = "subtitle"           // 字幕生成任务
+	TaskTypeCover             TaskType = "cover"              // 封面生成任务
+	TaskTypeDocumentEmbedding TaskType = "document_embedding" // 知识库文档向量化任务
 )
 
 // TaskStatus 任务状态
@@ -40,7 +41,8 @@ type Task struct {
 	ID        string     `json:"id"`
 	Type      TaskType   `json:"type"`
 	OperaID   uint       `json:"opera_id"`
-	Force     bool       `json:"force"` // 是否强制重新生成
+	DocID     string     `json:"doc_id,omitempty"` // 知识库文档 UUID（DocumentEmbedding 任务使用）
+	Force     bool       `json:"force"`            // 是否强制重新生成
 	Status    TaskStatus `json:"status"`
 	Error     string     `json:"error,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
@@ -62,11 +64,12 @@ type BatchTask struct {
 
 const (
 	// 队列名称
-	QueueEmbedding = "queue:embedding"
-	QueueSummary   = "queue:summary"
-	QueueTranscode = "queue:transcode"
-	QueueSubtitle  = "queue:subtitle"
-	QueueCover     = "queue:cover"
+	QueueEmbedding         = "queue:embedding"
+	QueueSummary           = "queue:summary"
+	QueueTranscode         = "queue:transcode"
+	QueueSubtitle          = "queue:subtitle"
+	QueueCover             = "queue:cover"
+	QueueDocumentEmbedding = "queue:document_embedding"
 
 	// 任务状态键前缀
 	TaskKeyPrefix      = "task:"
@@ -219,6 +222,8 @@ func getQueueName(taskType TaskType) string {
 		return QueueSubtitle
 	case TaskTypeCover:
 		return QueueCover
+	case TaskTypeDocumentEmbedding:
+		return QueueDocumentEmbedding
 	default:
 		return ""
 	}

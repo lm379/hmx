@@ -97,6 +97,14 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			search.GET("/artists", HandleSearchArtists) // 搜索艺术家
 		}
 
+		// 知识库问答路由 (QA)
+		qa := v1.Group("/qa")
+		{
+			qa.POST("/ask", middleware.TryAuthMiddleware(), HandleAsk)
+			qa.GET("/history", middleware.TryAuthMiddleware(), HandleGetQAHistory)
+			qa.POST("/:qa_id/feedback", middleware.TryAuthMiddleware(), HandleSubmitFeedback)
+		}
+
 		// 管理员路由 (Admin)
 		admin := v1.Group("/admin")
 		admin.Use(middleware.AuthMiddleware())
@@ -130,6 +138,18 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 				adminSearch.POST("/reindex/operas", HandleReindexOperas)   // 重新索引所有作品
 				adminSearch.POST("/reindex/artists", HandleReindexArtists) // 重新索引所有艺术家
 				adminSearch.GET("/stats", HandleGetSearchStats)            // 获取搜索统计
+			}
+
+			// 知识库管理路由
+			knowledge := admin.Group("/knowledge")
+			{
+				knowledge.POST("/documents", HandleAdminUploadKnowledge)                               // 上传知识库文档
+				knowledge.GET("/documents", HandleAdminGetKnowledgeDocuments)                          // 获取文档列表
+				knowledge.GET("/documents/:doc_id", HandleAdminGetKnowledgeDocumentDetail)             // 获取文档详情
+				knowledge.DELETE("/documents/:doc_id", HandleAdminDeleteKnowledgeDocument)             // 删除文档
+				knowledge.PUT("/documents/:doc_id/reactivate", HandleAdminReactivateKnowledgeDocument) // 重新激活文档
+				knowledge.GET("/stats", HandleAdminGetKnowledgeStats)                                  // 知识库统计
+				knowledge.POST("/import-operas", HandleAdminImportOperas)                              // 批量导入作品字幕
 			}
 		}
 	}

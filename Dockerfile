@@ -9,7 +9,7 @@ RUN npm ci
 
 COPY frontend/ ./
 
-RUN npm run build
+RUN npm install -g pnpm && pnpm install && pnpm run build
 
 # 构建后端
 FROM golang:1.24-alpine AS backend-builder

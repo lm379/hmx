@@ -805,3 +805,67 @@
   font-size: 12px;
   color: #9499a0;
 }
+
+/* ===========================
+   移动端适配
+   =========================== */
+
+@media (max-width: 767px) {
+  .play-container {
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 12px;
+  }
+
+  .sidebar-column {
+    width: 100%;
+  }
+
+  .video-title {
+    font-size: 17px;
+    line-height: 24px;
+  }
+
+  .video-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    gap: 16px;
+  }
+
+  /* AI 卡片在移动端全宽 */
+  .ai-card {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    max-height: 70vh;
+  }
+
+  /* 评论区头像缩小 */
+  .user-avatar-img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .comment-send-section {
+    gap: 10px;
+  }
+
+  /* 推荐列表卡片横向紧凑 */
+  .rec-cover {
+    width: 120px;
+    height: 75px;
+  }
+
+  /* 回复缩进减少 */
+  .replies-list {
+    padding-left: 20px;
+  }
+}

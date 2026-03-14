@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/lm379/hmx/internal/models"
 	"github.com/lm379/hmx/internal/services"
 	"github.com/lm379/hmx/pkg/converter"
@@ -287,4 +288,149 @@ func HandleBatchGenerateOperaSummaries(c *gin.Context) {
 		"batch_id": batchID,
 		"total":    total,
 	})
+}
+
+// =============================================
+// 知识库管理端点（Admin Knowledge）
+// =============================================
+
+// HandleAdminUploadKnowledge (POST /api/v1/admin/knowledge/upload)
+// multipart/form-data: title, source_type, file (.txt/.md)
+func HandleAdminUploadKnowledge(c *gin.Context) {
+	var req models.UploadDocumentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	// 获取操作者 ID
+	rawID, exists := c.Get("userID")
+	if !exists {
+		resp.Unauthorized(c, "未认证")
+		return
+	}
+	adminUserID := rawID.(uint)
+
+	// 创建文档记录
+	doc, err := services.UploadDocument(req.Title, req.Content, req.SourceType, adminUserID)
+	if err != nil {
+		resp.InternalServerError(c, "上传文档失败: "+err.Error())
+		return
+	}
+
+	// 入队向量化
+	services.EnqueueDocumentEmbedding(doc.DocID)
+
+	resp.Success(c, gin.H{
+		"doc_id": doc.DocID,
+		"status": "processing",
+	})
+}
+
+// HandleAdminGetKnowledgeDocuments (GET /api/v1/admin/knowledge/documents)
+func HandleAdminGetKnowledgeDocuments(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "20")
+	page, _ := strconv.Atoi(pageStr)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	items, total, err := services.GetDocuments(page, pageSize)
+	if err != nil {
+		resp.InternalServerError(c, "获取文档列表失败: "+err.Error())
+		return
+	}
+
+	resp.Success(c, gin.H{
+		"list": items,
+		"pagination": gin.H{
+			"total":     total,
+			"page":      page,
+			"page_size": pageSize,
+		},
+	})
+}
+
+// HandleAdminDeleteKnowledgeDocument (DELETE /api/v1/admin/knowledge/:doc_id)
+func HandleAdminDeleteKnowledgeDocument(c *gin.Context) {
+	docIDStr := c.Param("doc_id")
+	docID, err := uuid.Parse(docIDStr)
+	if err != nil {
+		resp.BadRequest(c, "无效的 doc_id")
+		return
+	}
+
+	if err := services.SoftDeleteDocument(docID); err != nil {
+		resp.InternalServerError(c, "删除文档失败: "+err.Error())
+		return
+	}
+
+	resp.Success(c, gin.H{"success": true})
+}
+
+// HandleAdminImportOperas (POST /api/v1/admin/knowledge/import-operas)
+// 一次性触发：将所有已显示作品的字幕导入知识库
+func HandleAdminImportOperas(c *gin.Context) {
+	rawID, exists := c.Get("userID")
+	if !exists {
+		resp.Unauthorized(c, "未认证")
+		return
+	}
+	adminUserID := rawID.(uint)
+
+	// 异步执行
+	go services.ImportAllOperasToKnowledge(adminUserID)
+
+	resp.Success(c, gin.H{
+		"message": "作品字幕导入任务已启动，正在后台处理",
+	})
+}
+
+// HandleAdminGetKnowledgeDocumentDetail (GET /api/v1/admin/knowledge/documents/:doc_id)
+// 获取单个知识库文档详情（含全文内容）
+func HandleAdminGetKnowledgeDocumentDetail(c *gin.Context) {
+	docIDStr := c.Param("doc_id")
+	docID, err := uuid.Parse(docIDStr)
+	if err != nil {
+		resp.BadRequest(c, "无效的 doc_id")
+		return
+	}
+
+	doc, err := services.GetDocumentDetail(docID)
+	if err != nil {
+		resp.NotFound(c, "文档不存在")
+		return
+	}
+
+	resp.Success(c, doc)
+}
+
+// HandleAdminReactivateKnowledgeDocument (PUT /api/v1/admin/knowledge/documents/:doc_id/reactivate)
+// 重新激活已软删除的文档，并重新触发向量化
+func HandleAdminReactivateKnowledgeDocument(c *gin.Context) {
+	docIDStr := c.Param("doc_id")
+	docID, err := uuid.Parse(docIDStr)
+	if err != nil {
+		resp.BadRequest(c, "无效的 doc_id")
+		return
+	}
+
+	if err := services.ReactivateDocument(docID); err != nil {
+		resp.InternalServerError(c, "激活文档失败: "+err.Error())
+		return
+	}
+
+	resp.Success(c, gin.H{"success": true, "message": "文档已激活，正在重新向量化"})
+}
+
+// HandleAdminGetKnowledgeStats (GET /api/v1/admin/knowledge/stats)
+// 获取知识库统计信息
+func HandleAdminGetKnowledgeStats(c *gin.Context) {
+	stats := services.GetKnowledgeStats()
+	resp.Success(c, stats)
 }

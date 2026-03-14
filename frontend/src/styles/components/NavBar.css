@@ -1,3 +1,7 @@
+/* ===========================
+   NavBar — PC 样式（保持原样）
+   =========================== */
+
 .navbar-container {
   background-color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -22,6 +26,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .logo-text {
@@ -50,6 +55,7 @@
   color: #18191c;
   outline: none;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .search-bar input:focus {
@@ -79,6 +85,7 @@
   display: flex;
   align-items: center;
   gap: 24px;
+  flex-shrink: 0;
 }
 
 .avatar-wrapper {
@@ -120,7 +127,6 @@
   z-index: 1000;
 }
 
-/* Bridge the gap between avatar and dropdown to keep hover state */
 .user-dropdown::before {
   content: "";
   position: absolute;
@@ -230,4 +236,62 @@
 
 .upload-btn:hover {
   background-color: #c90000;
+}
+
+/* ===========================
+   移动端搜索图标（PC 下隐藏）
+   =========================== */
+
+.mobile-search-icon {
+  display: none;
+}
+
+/* ===========================
+   移动端断点 ≤ 767px
+   =========================== */
+
+@media (max-width: 767px) {
+  .navbar-content {
+    height: var(--navbar-height-mobile, 56px);
+    padding: 0 12px;
+  }
+
+  /* Logo 字体缩小，防止与右侧挤压 */
+  .logo-text {
+    font-size: 14px;
+  }
+
+  /* 隐藏中间搜索框 */
+  .search-bar {
+    display: none;
+  }
+
+  /* 收藏/历史文字链接在移动端隐藏 */
+  .pc-only {
+    display: none;
+  }
+
+  /* 用户操作区间距收窄 */
+  .user-actions {
+    gap: 12px;
+  }
+
+  /* 移动端搜索图标显示 */
+  .mobile-search-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    color: #61666d;
+    border-radius: 50%;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .mobile-search-icon:active {
+    background-color: #f1f2f3;
+    color: #A40000;
+  }
 }

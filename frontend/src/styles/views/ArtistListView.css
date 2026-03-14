@@ -74,3 +74,40 @@
   padding: 40px;
   color: #9499a0;
 }
+
+/* ===========================
+   移动端适配
+   =========================== */
+
+@media (max-width: 767px) {
+  .artist-list-view {
+    padding: 12px;
+  }
+
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .artist-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .artist-card {
+    padding: 16px 12px;
+  }
+
+  .artist-avatar-wrapper {
+    width: 72px;
+    height: 72px;
+  }
+
+  .artist-name {
+    font-size: 15px;
+  }
+
+  .artist-bio-preview {
+    font-size: 12px;
+  }
+}

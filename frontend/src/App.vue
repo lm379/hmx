@@ -20,6 +20,9 @@
 
       <router-view />
     </main>
+
+    <!-- Global knowledge Q&A chat widget (hidden in admin panel) -->
+    <ChatWindow v-if="!$route.path.startsWith('/admin')" />
   </div>
 </template>
 

@@ -54,6 +54,13 @@
   }
 }
 
+@media (max-width: 480px) {
+  .video-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
 .loading-state,
 .empty-state {
   text-align: center;

@@ -1,4 +1,4 @@
-import { defineComponent, onMounted, ref } from 'vue';
+import { defineComponent, onMounted, onUnmounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
@@ -10,6 +10,22 @@ export default defineComponent({
     const authStore = useAuthStore();
     const { isLoggedIn, user } = storeToRefs(authStore);
     const searchQuery = ref('');
+    const mobileDropdownOpen = ref(false);
+
+    const isMobile = () => window.innerWidth <= 767;
+
+    const toggleMobileDropdown = () => {
+      if (!isMobile()) return; // PC 端由 CSS hover 处理，不走此逻辑
+      mobileDropdownOpen.value = !mobileDropdownOpen.value;
+    };
+
+    const closeMobileDropdown = () => {
+      mobileDropdownOpen.value = false;
+    };
+
+    const goSearch = () => {
+      router.push('/search');
+    };
 
     const handleSearch = () => {
       if (searchQuery.value.trim()) {
@@ -21,6 +37,7 @@ export default defineComponent({
     };
 
     const handleLogout = async () => {
+      closeMobileDropdown();
       await authStore.logout();
       router.push('/login');
     };
@@ -40,6 +57,7 @@ export default defineComponent({
     };
 
     const goProfile = () => {
+      closeMobileDropdown();
       router.push('/profile');
     };
 
@@ -52,19 +70,38 @@ export default defineComponent({
     };
 
     const goAdmin = () => {
+      closeMobileDropdown();
       router.push('/admin');
+    };
+
+    // 点击页面其他区域关闭 dropdown（仅移动端）
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (!isMobile()) return;
+      const target = e.target as HTMLElement;
+      if (!target.closest('.avatar-wrapper') && !target.closest('.mobile-dropdown-overlay')) {
+        closeMobileDropdown();
+      }
     };
 
     onMounted(() => {
       authStore.checkLoginStatus();
+      document.addEventListener('click', handleOutsideClick);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener('click', handleOutsideClick);
     });
 
     return {
       isLoggedIn,
       user,
       searchQuery,
+      mobileDropdownOpen,
+      toggleMobileDropdown,
+      closeMobileDropdown,
       handleSearch,
       goHome,
+      goSearch,
       goLogin,
       goProfile,
       goCollection,

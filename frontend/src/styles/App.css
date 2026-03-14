@@ -19,17 +19,17 @@ button, input, select, textarea {
   padding: 20px 24px;
 }
 
-/* Category Bar Styles */
+/* ===========================
+   Category Bar 样式
+   =========================== */
+
 .category-bar-container {
   position: sticky;
-  top: 64px;
-  /* Height of NavBar */
+  top: 64px; /* Height of NavBar (PC) */
   z-index: 99;
   background-color: #f4f5f7;
-  /* Match background to hide content scrolling behind */
-  padding-bottom: 20px;
+  padding-bottom: 16px;
   padding-top: 5px;
-  /* Add some top padding */
 }
 
 .category-bar {
@@ -43,10 +43,11 @@ button, input, select, textarea {
   color: #61666d;
   padding: 8px 16px;
   border-radius: 18px;
-  /* Pill shape */
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap; /* 防止移动端换行 */
+  flex-shrink: 0;
 }
 
 .cat-btn:hover {
@@ -59,4 +60,127 @@ button, input, select, textarea {
   color: white;
   border-color: #A40000;
   font-weight: 500;
+}
+
+/* ===========================
+   移动端 Dropdown Panel（全局，Teleport 脱离 scoped 作用域）
+   =========================== */
+
+/* PC 端隐藏 Teleport 面板（仅移动端使用） */
+.mobile-dropdown-panel,
+.mobile-dropdown-overlay {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  /* 遮罩层 */
+  .mobile-dropdown-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: transparent;
+  }
+
+  /* 面板本体 */
+  .mobile-dropdown-panel {
+    display: block;
+    position: fixed;
+    top: calc(var(--navbar-height-mobile, 56px) + 8px); /* navbar + small gap */
+    right: 12px;
+    z-index: 9999;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    padding: 12px 0;
+    overflow: hidden;
+  }
+
+  /* 用户信息行 */
+  .mobile-dropdown-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px 12px;
+  }
+
+  .mobile-dropdown-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid #e3e5e7;
+  }
+
+  .mobile-dropdown-name {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #18191c;
+  }
+
+  .mobile-dropdown-role {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: #9499a0;
+  }
+
+  /* 菜单项 */
+  .mobile-dropdown-item {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #61666d;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .mobile-dropdown-item:active {
+    background-color: #f1f2f3;
+  }
+
+  .mobile-dropdown-item.danger {
+    color: #c90000;
+  }
+}
+
+/* Teleport dropdown 过渡动画 */
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* ===========================
+   移动端适配
+   =========================== */
+
+@media (max-width: 767px) {
+  .main-content {
+    padding: 12px;
+  }
+
+  /* 移动端 NavBar 高度为 56px */
+  .category-bar-container {
+    top: var(--navbar-height-mobile, 56px);
+    padding-bottom: 10px;
+  }
+
+  /* category-bar 横向滚动，不换行 */
+  .category-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    padding-bottom: 4px;
+  }
+
+  .category-bar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
 }

@@ -35,7 +35,7 @@ type Opera struct {
 	Description string          `gorm:"column:description;type:text"`
 	Avatar      sql.NullString  `gorm:"column:avatar;type:varchar(255)"`
 	AiSummary   string          `gorm:"column:ai_summary;type:text"`
-	Embedding   pgvector.Vector `gorm:"column:embedding;type:vector(1536)"` // AI向量表示，使用pgvector
+	Embedding   pgvector.Vector `gorm:"column:embedding;type:vector(4096)"` // AI向量表示，使用pgvector
 	IsHidden    bool            `gorm:"column:is_hidden;default:false;not null"`
 	CreatedAt   time.Time       `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time       `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP"`

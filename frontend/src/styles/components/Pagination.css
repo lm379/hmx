@@ -33,3 +33,19 @@
   font-size: 14px;
   color: #61666d;
 }
+
+@media (max-width: 767px) {
+  .pagination {
+    margin-top: 24px;
+    gap: 12px;
+  }
+
+  .page-btn {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+
+  .page-info {
+    font-size: 13px;
+  }
+}

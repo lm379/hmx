@@ -59,6 +59,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { showCategoryBar: true }
   },
   {
+    path: '/qa/history',
+    name: 'QAHistory',
+    component: () => import('../views/QAHistoryView.vue')
+  },
+  {
     path: '/admin',
     component: () => import('../views/admin/AdminLayout.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
@@ -96,6 +101,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'search',
         name: '搜索管理',
         component: () => import('../views/admin/SearchManager.vue')
+      },
+      {
+        path: 'knowledge',
+        name: '知识库管理',
+        component: () => import('../views/admin/KnowledgeManager.vue')
       }
     ]
   },

@@ -1,0 +1,34 @@
+/* ============================================================
+   全局 CSS 变量 & 断点定义
+   断点规则（Mobile-first 辅助，媒体查询直接在各 CSS 文件中使用）：
+     xs:  < 480px   超小屏 (小手机)
+     sm:  480px ~ 767px  手机横屏 / 大手机
+     md:  768px ~ 1023px  平板
+     lg:  1024px ~ 1399px  桌面
+     xl:  ≥ 1400px   宽屏桌面
+   ============================================================ */
+
+:root {
+  /* NavBar 高度，方便各处 sticky top 计算 */
+  --navbar-height: 64px;
+  --navbar-height-mobile: 56px;
+
+  /* 主内容区横向内边距 */
+  --content-padding-desktop: 24px;
+  --content-padding-tablet: 16px;
+  --content-padding-mobile: 12px;
+
+  /* 品牌色 */
+  --color-primary: #A40000;
+  --color-primary-dark: #af000f;
+
+  /* 文字色 */
+  --color-text-main: #18191c;
+  --color-text-sub: #61666d;
+  --color-text-muted: #9499a0;
+
+  /* 边框 / 背景 */
+  --color-border: #e3e5e7;
+  --color-bg-page: #f4f5f7;
+  --color-bg-card: #ffffff;
+}

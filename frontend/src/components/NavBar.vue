@@ -6,7 +6,7 @@
         <span class="logo-text">黄梅戏数字化传播平台</span>
       </div>
 
-      <!-- Center: Search -->
+      <!-- Center: Search (PC) -->
       <div class="search-bar">
         <input 
           type="text" 
@@ -25,11 +25,25 @@
 
       <!-- Right: User Actions -->
       <div class="user-actions">
+        <!-- 移动端搜索图标（仅移动端显示） -->
+        <button class="mobile-search-icon" @click="goSearch" aria-label="搜索">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
         <template v-if="isLoggedIn && user">
-          <div class="avatar-wrapper" @click="goProfile">
+          <!--
+            PC:  hover 触发 dropdown（纯 CSS）
+            移动: click 触发 toggleMobileDropdown，不直接跳转
+          -->
+          <div class="avatar-wrapper" @click.stop="toggleMobileDropdown">
             <img :src="user.icon || `https://ui-avatars.com/api/?name=${user.username}&background=random`" alt="Avatar"
               class="avatar" />
-            <div class="user-dropdown">
+            <!-- PC hover dropdown -->
+            <div class="user-dropdown pc-dropdown">
               <div class="user-info-brief" @click.stop="goProfile">
                 <p class="username">{{ user.username }}</p>
                 <p class="user-role">{{ user.role }}</p>
@@ -40,10 +54,11 @@
               <div class="dropdown-item" @click.stop="handleLogout">退出登录</div>
             </div>
           </div>
-          <div class="action-item" @click="goCollection">
+          <!-- 收藏/历史 仅 PC 显示 -->
+          <div class="action-item pc-only" @click="goCollection">
             <span>收藏</span>
           </div>
-          <div class="action-item" @click="goHistory">
+          <div class="action-item pc-only" @click="goHistory">
             <span>历史</span>
           </div>
         </template>
@@ -62,6 +77,28 @@
       </div>
     </div>
   </div>
+
+  <!-- 移动端 dropdown（fixed 定位，脱离 navbar 层叠上下文） -->
+  <Teleport to="body">
+    <Transition name="dropdown-fade">
+      <div v-if="isLoggedIn && user && mobileDropdownOpen" class="mobile-dropdown-panel" @click.stop>
+        <div class="mobile-dropdown-user">
+          <img :src="user.icon || `https://ui-avatars.com/api/?name=${user.username}&background=random`" alt="Avatar"
+            class="mobile-dropdown-avatar" />
+          <div>
+            <p class="mobile-dropdown-name">{{ user.username }}</p>
+            <p class="mobile-dropdown-role">{{ user.role }}</p>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="mobile-dropdown-item" @click="goProfile">个人中心</div>
+        <div class="mobile-dropdown-item" v-if="user.role === 'Administrator'" @click="goAdmin">后台管理</div>
+        <div class="mobile-dropdown-item danger" @click="handleLogout">退出登录</div>
+      </div>
+    </Transition>
+    <!-- 点击外部关闭遮罩 -->
+    <div v-if="mobileDropdownOpen" class="mobile-dropdown-overlay" @click="closeMobileDropdown"></div>
+  </Teleport>
 </template>
 
 <script lang="ts">

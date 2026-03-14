@@ -47,3 +47,7 @@ cmd/server/static/
 # 其他
 tmp/
 .DS_Store
+
+migrations/
+.github/prompts/
+docs/knowledge-base/

@@ -8,9 +8,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lm379/hmx/config"
+	"github.com/lm379/hmx/database"
+	"github.com/lm379/hmx/internal/models"
 	"github.com/lm379/hmx/internal/repository"
 	"github.com/lm379/hmx/pkg/ai"
+	pgvector "github.com/pgvector/pgvector-go"
 )
 
 // Worker 任务处理器
@@ -85,6 +89,8 @@ func (w *Worker) processTask() {
 		taskErr = w.processEmbeddingTask(task)
 	case TaskTypeSummary:
 		taskErr = w.processSummaryTask(task)
+	case TaskTypeDocumentEmbedding:
+		taskErr = w.processDocumentEmbeddingTask(task)
 	default:
 		taskErr = nil
 	}
@@ -177,6 +183,102 @@ func (w *Worker) processSummaryTask(task *Task) error {
 	return operaRepo.UpdateSummary(opera.OperaID, summary)
 }
 
+// processDocumentEmbeddingTask 处理知识库文档向量化任务
+func (w *Worker) processDocumentEmbeddingTask(task *Task) error {
+	if task.DocID == "" {
+		return fmt.Errorf("task missing doc_id")
+	}
+
+	docID, err := uuid.Parse(task.DocID)
+	if err != nil {
+		return fmt.Errorf("invalid doc_id %q: %w", task.DocID, err)
+	}
+
+	// 查询文档
+	var doc models.KnowledgeDocument
+	if err := database.DB.Where("doc_id = ? AND is_active = true", docID).First(&doc).Error; err != nil {
+		return fmt.Errorf("document not found: %w", err)
+	}
+
+	// 标记为处理中
+	database.DB.Model(&doc).Update("embedding_status", "processing")
+
+	// 分块
+	chunks := splitTextIntoChunks(doc.Content, 512, 50)
+	log.Printf("[Worker] DocumentEmbedding: doc %s → %d chunks", docID, len(chunks))
+
+	successCount := 0
+	for i, chunk := range chunks {
+		embedding, err := ai.GenerateEmbedding(chunk)
+		if err != nil {
+			log.Printf("[Worker] DocumentEmbedding: chunk %d embedding failed: %v", i, err)
+			continue
+		}
+
+		f32 := make([]float32, len(embedding))
+		for j, v := range embedding {
+			f32[j] = float32(v)
+		}
+
+		ke := &models.KnowledgeEmbedding{
+			ChunkID:    uuid.New(),
+			DocID:      docID,
+			ChunkIndex: i,
+			ChunkText:  chunk,
+			Embedding:  pgvector.NewVector(f32),
+		}
+		if err := database.DB.Create(ke).Error; err != nil {
+			log.Printf("[Worker] DocumentEmbedding: store chunk %d failed: %v", i, err)
+			continue
+		}
+		successCount++
+	}
+
+	// 更新文档状态和分块数
+	status := "completed"
+	if successCount == 0 && len(chunks) > 0 {
+		status = "failed"
+	}
+	database.DB.Model(&doc).Updates(map[string]interface{}{
+		"embedding_status": status,
+		"chunks_count":     successCount,
+	})
+
+	log.Printf("[Worker] DocumentEmbedding: doc %s completed, status=%s chunks=%d/%d",
+		docID, status, successCount, len(chunks))
+	return nil
+}
+
+// splitTextIntoChunks splits text into overlapping chunks (rune-aware)
+func splitTextIntoChunks(text string, size, overlap int) []string {
+	runes := []rune(text)
+	total := len(runes)
+	if total == 0 {
+		return nil
+	}
+
+	step := size - overlap
+	if step <= 0 {
+		step = size
+	}
+
+	var chunks []string
+	for start := 0; start < total; start += step {
+		end := start + size
+		if end > total {
+			end = total
+		}
+		chunk := string(runes[start:end])
+		if len([]rune(chunk)) > 0 {
+			chunks = append(chunks, chunk)
+		}
+		if end >= total {
+			break
+		}
+	}
+	return chunks
+}
+
 // readSubtitleFromCDN 从CDN/对象存储读取字幕文件内容
 func readSubtitleFromCDN(srtPath string) (string, error) {
 	// 构建完整的CDN URL
@@ -254,6 +356,7 @@ func StartWorkers() []*Worker {
 	workers := []*Worker{
 		NewWorker(TaskTypeEmbedding),
 		NewWorker(TaskTypeSummary),
+		NewWorker(TaskTypeDocumentEmbedding),
 	}
 
 	for _, worker := range workers {

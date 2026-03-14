@@ -70,3 +70,7 @@ test/
 
 frontend/node_modules/
 static/
+
+migrations/
+.github/prompts/
+docs/knowledge-base/
