@@ -12,9 +12,20 @@ on:
         default: 'beta'
         type: string
 
+env:
+  REGISTRY_IMAGE: ${{ secrets.DOCKER_USERNAME }}/hmx
+  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/hmx
+
 jobs:
-  build-docker:
-    runs-on: ubuntu-22.04
+  build:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+          - platform: linux/arm64
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -22,6 +33,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate Docker Hub secrets
+        run: |
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ] || [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "DOCKER_USERNAME or DOCKER_PASSWORD is not set"
+            exit 1
+          fi
 
       - name: Get current date
         id: date
@@ -38,60 +56,38 @@ jobs:
             echo "is_latest=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Prepare
+        id: prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo "platform_pair=${platform//\//-}" >> $GITHUB_OUTPUT
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-    #   - name: Log in to Huawei SWR
-    #     uses: docker/login-action@v3
-    #     with:
-    #       registry: swr.cn-southwest-2.myhuaweicloud.com
-    #       username: ${{ secrets.SWR_USERNAME }}
-    #       password: ${{ secrets.SWR_PASSWORD }}
-    #     continue-on-error: true
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
 
-    #   - name: Log in to cnb registry
-    #     uses: docker/login-action@v3
-    #     with:
-    #       registry: docker.cnb.cool
-    #       username: cnb
-    #       password: ${{ secrets.CNB_PASSWORD }}
-    #     continue-on-error: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ secrets.DOCKER_USERNAME }}/hmx
-            ghcr.io/${{ github.repository_owner }}/hmx
-            # swr.cn-southwest-2.myhuaweicloud.com/${{ github.repository_owner }}/hmx
-            # docker.cnb.cool/${{ github.repository_owner }}/hmx
-          tags: |
-            type=raw,value=${{ steps.version.outputs.version }}
-            type=raw,value=latest,enable=${{ steps.version.outputs.is_latest }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: false
-          tags: ${{ steps.meta.outputs.tags }}
+          platforms: ${{ matrix.platform }}
           labels: |
             org.opencontainers.image.title=HMX
             org.opencontainers.image.description=HMX Video Platform Backend
@@ -100,8 +96,112 @@ jobs:
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=MIT
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},name=${{ env.GHCR_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          provenance: false
+          cache-from: type=gha,scope=${{ steps.prepare.outputs.platform_pair }}
+          cache-to: type=gha,mode=max,scope=${{ steps.prepare.outputs.platform_pair }}
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
             BUILD_TIME=${{ steps.date.outputs.date }}
+
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ steps.prepare.outputs.platform_pair }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge Multi-Arch Manifest
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Validate Docker Hub secrets
+        run: |
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ] || [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "DOCKER_USERNAME or DOCKER_PASSWORD is not set"
+            exit 1
+          fi
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "is_latest=false" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "is_latest=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Create Docker Hub manifest and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY_IMAGE }}:${{ steps.version.outputs.version }} \
+            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+
+          if [ "${{ steps.version.outputs.is_latest }}" = "true" ]; then
+            docker buildx imagetools create \
+              -t ${{ env.REGISTRY_IMAGE }}:latest \
+              $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+          fi
+
+      - name: Create GHCR manifest and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.GHCR_IMAGE }}:${{ steps.version.outputs.version }} \
+            $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
+
+          if [ "${{ steps.version.outputs.is_latest }}" = "true" ]; then
+            docker buildx imagetools create \
+              -t ${{ env.GHCR_IMAGE }}:latest \
+              $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
+          fi
+
+      - name: Inspect Docker Hub image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.version.outputs.version }}
+
+      - name: Inspect GHCR image
+        run: |
+          docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:${{ steps.version.outputs.version }}
