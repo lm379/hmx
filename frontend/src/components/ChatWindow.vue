@@ -111,6 +111,9 @@
   </Teleport>
 </template>
 
-<script lang="ts" src="./ChatWindow.ts"></script>
+<script lang="ts">
+import ChatWindowScript from '../scripts/components/ChatWindow';
+export default ChatWindowScript;
+</script>
 
-<style scoped src="./ChatWindow.css"></style>
+<style scoped src="../styles/components/ChatWindow.css"></style>

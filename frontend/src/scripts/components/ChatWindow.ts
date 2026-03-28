@@ -1,6 +1,6 @@
 import { defineComponent, ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
-import { useQAStore } from '../stores/qa';
-import RelatedSources from './RelatedSources.vue';
+import { useQAStore } from '../../stores/qa';
+import RelatedSources from '../../components/RelatedSources.vue';
 
 // Default geometry (reset on every page load)
 // NOTE: left/bottom are computed lazily in setup() so window.innerWidth is

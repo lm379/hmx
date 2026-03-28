@@ -1,0 +1,83 @@
+.related-sources {
+  margin-top: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.sources-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.06);
+  user-select: none;
+}
+
+.sources-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255,255,255,0.6);
+}
+
+.chevron {
+  transition: transform 0.2s;
+  color: rgba(255,255,255,0.4);
+}
+.chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.sources-list {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.source-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.source-index {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: rgba(255,255,255,0.7);
+}
+
+.source-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.source-doc-title {
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-snippet {
+  color: rgba(255,255,255,0.45);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.source-score {
+  flex-shrink: 0;
+  color: rgba(255,255,255,0.35);
+  font-size: 11px;
+}
