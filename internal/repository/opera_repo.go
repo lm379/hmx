@@ -193,6 +193,24 @@ func (r *OperaRepo) GetPopularOperas(excludeIDs []uint, limit int) ([]uint, erro
 	return operaIDs, err
 }
 
+// GetLatestOperas 获取最新可见作品
+func (r *OperaRepo) GetLatestOperas(limit, offset int) ([]uint, int64, error) {
+	var operaIDs []uint
+	var total int64
+
+	db := r.getDB().Model(&models.Opera{}).Where("is_hidden = ?", false)
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := db.Order("created_at DESC, opera_id DESC").
+		Limit(limit).
+		Offset(offset).
+		Pluck("opera_id", &operaIDs).Error
+
+	return operaIDs, total, err
+}
+
 // GetOperasNeedingSummary 获取所有有字幕但没有摘要的作品
 func (r *OperaRepo) GetOperasNeedingSummary() ([]models.Opera, error) {
 	var operas []models.Opera

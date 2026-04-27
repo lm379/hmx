@@ -1,9 +1,17 @@
-import { defineComponent, ref, onMounted, type Ref } from 'vue';
+import { computed, defineComponent, ref, onMounted, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
 import VideoCard from '../../components/VideoCard.vue';
 import Pagination from '../../components/Pagination.vue';
 import axios from 'axios';
 import type { OperaListItem } from '../../types';
+
+type RecommendationChannel = 'for_you' | 'hot' | 'latest';
+
+interface ChannelOption {
+  key: RecommendationChannel;
+  label: string;
+  description: string;
+}
 
 export default defineComponent({
   name: 'HomeView',
@@ -18,6 +26,29 @@ export default defineComponent({
     const currentPage = ref(1);
     const pageSize = ref(15); // Grid usually fits 12 better (4x3)
     const totalItems = ref(0);
+    const activeChannel = ref<RecommendationChannel>('for_you');
+    const defaultChannel: ChannelOption = {
+      key: 'for_you',
+      label: '为你推荐',
+      description: '结合观看、点赞和收藏记录，为你挑选可能感兴趣的黄梅戏内容'
+    };
+    const channels: ChannelOption[] = [
+      defaultChannel,
+      {
+        key: 'hot',
+        label: '热门',
+        description: '按播放、点赞、收藏等互动热度排序，发现大家正在看的作品'
+      },
+      {
+        key: 'latest',
+        label: '最新',
+        description: '查看平台最新收录的黄梅戏作品'
+      }
+    ];
+
+    const activeChannelInfo = computed(() => {
+      return channels.find(channel => channel.key === activeChannel.value) || defaultChannel;
+    });
 
     const fetchOperas = async (page = 1) => {
       try {
@@ -27,6 +58,7 @@ export default defineComponent({
           params: {
             page: page,
             page_size: pageSize.value,
+            channel: activeChannel.value,
             similarity_weight: 0.5,
             interest_weight: 0.5
           }
@@ -80,6 +112,13 @@ export default defineComponent({
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const handleChannelChange = (channel: RecommendationChannel) => {
+      if (activeChannel.value === channel) return;
+      activeChannel.value = channel;
+      fetchOperas(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     onMounted(() => {
       fetchOperas();
     });
@@ -90,9 +129,13 @@ export default defineComponent({
       currentPage,
       pageSize,
       totalItems,
+      activeChannel,
+      activeChannelInfo,
+      channels,
       fetchOperas,
       navigateToVideo,
-      handlePageChange
+      handlePageChange,
+      handleChannelChange
     };
   }
 });

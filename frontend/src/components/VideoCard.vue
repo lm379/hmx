@@ -3,6 +3,9 @@
     <div class="card-cover">
       <img :src="coverUrl" alt="Cover" loading="lazy" />
       <div class="duration" v-if="opera.duration">{{ formatDuration(opera.duration) }}</div>
+      <div class="recommend-reason" v-if="showRecommendationReason && recommendationReason">
+        {{ recommendationReason }}
+      </div>
     </div>
     <div class="card-info">
       <h3 class="title" :title="opera.opera_title">{{ opera.opera_title }}</h3>

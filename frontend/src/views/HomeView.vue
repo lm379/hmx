@@ -1,8 +1,29 @@
 <template>
   <div class="home-view">
+    <section class="recommend-header">
+      <div class="recommend-title-group">
+        <h2 class="recommend-title">内容推荐</h2>
+        <p class="recommend-subtitle">{{ activeChannelInfo.description }}</p>
+      </div>
+      <div class="channel-tabs" role="tablist" aria-label="首页推荐频道">
+        <button
+          v-for="channel in channels"
+          :key="channel.key"
+          class="channel-tab"
+          :class="{ active: activeChannel === channel.key }"
+          type="button"
+          role="tab"
+          :aria-selected="activeChannel === channel.key"
+          @click="handleChannelChange(channel.key)"
+        >
+          {{ channel.label }}
+        </button>
+      </div>
+    </section>
+
     <!-- Video Grid -->
     <div class="video-grid" v-if="!loading">
-      <VideoCard v-for="opera in operas" :key="opera.opera_id" :opera="opera"
+      <VideoCard v-for="opera in operas" :key="opera.opera_id" :opera="opera" show-recommendation-reason
         @click="navigateToVideo(opera.opera_id)" />
     </div>
 

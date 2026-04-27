@@ -67,15 +67,16 @@ type SimpleOpera struct {
 
 // OperaListResponse 用于列表页的简化响应
 type OperaListResponse struct {
-	OperaID    uint           `json:"opera_id"`
-	OperaTitle string         `json:"opera_title"`
-	Artists    []SimpleArtist `json:"artists"`
-	Avatar     *string        `json:"avatar"`
-	Duration   *string        `json:"duration,omitempty"`
-	IsHidden   bool           `json:"is_hidden"`
-	PlayCount  int64          `json:"play_count"`
-	LikeCount  int64          `json:"like_count"`
-	CreatedAt  time.Time      `json:"created_at"`
+	OperaID         uint           `json:"opera_id"`
+	OperaTitle      string         `json:"opera_title"`
+	Artists         []SimpleArtist `json:"artists"`
+	Avatar          *string        `json:"avatar"`
+	Duration        *string        `json:"duration,omitempty"`
+	IsHidden        bool           `json:"is_hidden"`
+	PlayCount       int64          `json:"play_count"`
+	LikeCount       int64          `json:"like_count"`
+	RecommendReason string         `json:"recommend_reason,omitempty"`
+	CreatedAt       time.Time      `json:"created_at"`
 }
 
 // OperaDetailResponse 用于详情页的完整响应

@@ -14,7 +14,7 @@ import (
 func HandleGetRecommendations(c *gin.Context) {
 	// 从中间件获取用户ID（可选，支持游客）
 	var userID uint = 0
-	if uid, exists := c.Get("user_id"); exists {
+	if uid, exists := c.Get("userID"); exists {
 		userID = uid.(uint)
 	}
 
@@ -47,9 +47,16 @@ func HandleGetRecommendations(c *gin.Context) {
 		interestWeight = 0.5
 	}
 
+	channel := c.DefaultQuery("channel", services.RecommendationChannelForYou)
+	if channel != services.RecommendationChannelForYou &&
+		channel != services.RecommendationChannelHot &&
+		channel != services.RecommendationChannelLatest {
+		channel = services.RecommendationChannelForYou
+	}
+
 	// 调用推荐服务（带分页）
 	recService := services.NewRecommendationService()
-	operaIDs, total, err := recService.RecommendForUser(userID, page, pageSize, similarityWeight, interestWeight)
+	operaIDs, total, reason, err := recService.RecommendByChannel(channel, userID, page, pageSize, similarityWeight, interestWeight)
 	if err != nil {
 		resp.Error(c, http.StatusInternalServerError, "Failed to get recommendations: "+err.Error())
 		return
@@ -75,6 +82,9 @@ func HandleGetRecommendations(c *gin.Context) {
 	if err != nil {
 		resp.Error(c, http.StatusInternalServerError, "Failed to fetch opera details")
 		return
+	}
+	for i := range operas {
+		operas[i].RecommendReason = reason
 	}
 
 	// 计算总页数

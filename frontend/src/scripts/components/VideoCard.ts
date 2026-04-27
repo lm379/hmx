@@ -9,6 +9,10 @@ export default defineComponent({
     opera: {
       type: Object as PropType<VideoCardProps>,
       required: true
+    },
+    showRecommendationReason: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
@@ -27,10 +31,18 @@ export default defineComponent({
       return "黄梅戏官方"; // 默认显示
     });
 
+    const recommendationReason = computed(() => {
+      if ('recommend_reason' in props.opera) {
+        return props.opera.recommend_reason || '';
+      }
+      return '';
+    });
+
     return {
       props,
       coverUrl,
       uploaderName,
+      recommendationReason,
       formatDuration,
       formatDate
     };

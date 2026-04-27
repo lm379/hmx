@@ -74,3 +74,8 @@ static/
 migrations/
 .github/prompts/
 docs/knowledge-base/
+
+.codex
+.claude
+.agents
+skills-lock.json

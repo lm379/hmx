@@ -27,6 +27,7 @@ export interface OperaListItem {
     is_hidden: boolean;
     play_count: number;
     like_count: number;
+    recommend_reason?: string;
     created_at: string;
     ai_summary?: string;
 }

@@ -40,6 +40,26 @@
   font-size: 12px;
 }
 
+.recommend-reason {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  background-color: rgba(164, 0, 0, 0.88);
+  color: #fff;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.duration + .recommend-reason {
+  max-width: calc(100% - 68px);
+}
+
 .card-info {
   margin-top: 10px;
 }

@@ -6,6 +6,12 @@ import (
 	"github.com/lm379/hmx/internal/repository"
 )
 
+const (
+	RecommendationChannelForYou = "for_you"
+	RecommendationChannelHot    = "hot"
+	RecommendationChannelLatest = "latest"
+)
+
 // RecommendationService 推荐服务
 type RecommendationService struct {
 	operaRepo          *repository.OperaRepo
@@ -70,7 +76,7 @@ func (s *RecommendationService) RecommendForUser(userID uint, page int, limit in
 
 	// 总数（用于前端显示）
 	var total int64
-	
+
 	// 计算真实的可用总数 = 全局可见总数 - 排除的ID数
 	totalVisible, err := s.operaRepo.CountVisible()
 	if err != nil {
@@ -113,6 +119,54 @@ func (s *RecommendationService) RecommendForUser(userID uint, page int, limit in
 	pageResults := recommendedIDs[startIdx:endIdx]
 
 	return pageResults, total, nil
+}
+
+// RecommendByChannel 为首页不同频道推荐作品。
+func (s *RecommendationService) RecommendByChannel(channel string, userID uint, page int, limit int, similarityWeight float64, interestWeight float64) ([]uint, int64, string, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+
+	switch channel {
+	case RecommendationChannelHot:
+		operaIDs, err := s.recommendationRepo.RecommendByInterestScore(nil, limit*page)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		total, err := s.operaRepo.CountVisible()
+		if err != nil {
+			total = int64(len(operaIDs))
+		}
+		return paginateIDs(operaIDs, page, limit), total, "互动热度较高", nil
+	case RecommendationChannelLatest:
+		offset := (page - 1) * limit
+		operaIDs, total, err := s.operaRepo.GetLatestOperas(limit, offset)
+		return operaIDs, total, "最新收录", err
+	default:
+		operaIDs, total, err := s.RecommendForUser(userID, page, limit, similarityWeight, interestWeight)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		if userID == 0 {
+			return operaIDs, total, "全站热门内容", nil
+		}
+		return operaIDs, total, "根据你的观看、点赞、收藏推荐", nil
+	}
+}
+
+func paginateIDs(ids []uint, page int, limit int) []uint {
+	startIdx := (page - 1) * limit
+	endIdx := startIdx + limit
+	if startIdx >= len(ids) {
+		return []uint{}
+	}
+	if endIdx > len(ids) {
+		endIdx = len(ids)
+	}
+	return ids[startIdx:endIdx]
 }
 
 // RecommendSimilarOperas 推荐与指定作品相似的其他作品
