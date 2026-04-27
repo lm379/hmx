@@ -153,7 +153,7 @@ func (s *RecommendationService) RecommendByChannel(channel string, userID uint, 
 		if userID == 0 {
 			return operaIDs, total, "全站热门内容", nil
 		}
-		return operaIDs, total, "根据你的观看、点赞、收藏推荐", nil
+		return operaIDs, total, "为你推荐", nil
 	}
 }
 

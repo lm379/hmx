@@ -54,7 +54,7 @@ func InitS3(ctx context.Context, cfg config.Config) {
 }
 
 // GeneratePresignedUploadURL 生成预签名的 PUT URL
-// uploadType: "user_avatar", "artist_avatar", "opera_cover", "video_upload"
+// uploadType: "user_avatar", "artist_avatar", "opera_cover", "news_cover", "video_upload"
 // userID: 当前登录用户的ID（从JWT获取）
 // userRole: 当前用户的角色（从JWT获取）
 // targetID: 目标资源ID（用户ID、艺术家ID、曲目ID等），video_upload时可为0
@@ -96,6 +96,13 @@ func GeneratePresignedUploadURL(ctx context.Context, uploadType string, userID u
 		}
 		// 路径: public/cover/{title}/{title}.ext
 		objectKey = filepath.Join("public", "cover", opera.OperaTitle, opera.OperaTitle+ext)
+
+	case "news_cover":
+		// 新闻封面由管理员上传，新闻保存时只记录对象存储 key。
+		if userRole != models.Administrator {
+			return "", "", fmt.Errorf("%w: administrator role required for news cover upload", ErrPermissionDenied)
+		}
+		objectKey = filepath.Join("public", "news", uuid.New().String()+ext)
 
 	case "video_upload":
 		// 视频上传到tmp：需要管理员权限，上传后由腾讯云数据万象处理并回调

@@ -15,6 +15,9 @@
           <button class="cat-btn" :class="{ active: $route.path === '/ranking' }" @click="$router.push('/ranking')">
             热门排行
           </button>
+          <button class="cat-btn" :class="{ active: $route.path.startsWith('/news') }" @click="$router.push('/news')">
+            戏曲资讯
+          </button>
         </div>
       </div>
 

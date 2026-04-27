@@ -188,3 +188,20 @@ export interface Comment {
     replyText?: string;
     showReplyEmojiPicker?: boolean;
 }
+
+export interface NewsListItem {
+    news_id: number;
+    title: string;
+    summary: string;
+    cover?: string;
+    source?: string;
+    author?: string;
+    is_published: boolean;
+    published_at?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface NewsDetail extends NewsListItem {
+    content: string;
+}

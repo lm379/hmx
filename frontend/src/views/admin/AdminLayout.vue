@@ -35,6 +35,12 @@
             </el-icon>
             <span>知识库管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/news">
+            <el-icon>
+              <Document />
+            </el-icon>
+            <span>新闻管理</span>
+          </el-menu-item>
           <el-menu-item index="/admin/artists">
             <el-icon>
               <User />
@@ -88,7 +94,7 @@
 
 <script lang="ts">
 import AdminLayoutScript from '../../scripts/views/admin/AdminLayout';
-import { DataLine, VideoCamera, User, UserFilled, HomeFilled, CaretBottom, List, Search, Notebook } from '@element-plus/icons-vue';
+import { DataLine, VideoCamera, User, UserFilled, HomeFilled, CaretBottom, List, Search, Notebook, Document } from '@element-plus/icons-vue';
 
 export default {
   ...AdminLayoutScript,
@@ -101,7 +107,8 @@ export default {
     CaretBottom,
     List,
     Search,
-    Notebook
+    Notebook,
+    Document
   }
 };
 </script>

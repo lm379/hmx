@@ -42,6 +42,18 @@ const routes: Array<RouteRecordRaw> = [
     meta: { showCategoryBar: true }
   },
   {
+    path: '/news',
+    name: 'News',
+    component: () => import('../views/NewsListView.vue'),
+    meta: { showCategoryBar: true }
+  },
+  {
+    path: '/news/:id',
+    name: 'NewsDetail',
+    component: () => import('../views/NewsDetailView.vue'),
+    meta: { showCategoryBar: true }
+  },
+  {
     path: '/search',
     name: 'Search',
     component: () => import('../views/SearchView.vue'),
@@ -106,6 +118,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'knowledge',
         name: '知识库管理',
         component: () => import('../views/admin/KnowledgeManager.vue')
+      },
+      {
+        path: 'news',
+        name: '新闻管理',
+        component: () => import('../views/admin/NewsManager.vue')
       }
     ]
   },

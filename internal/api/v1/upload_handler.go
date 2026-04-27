@@ -22,10 +22,11 @@ func HandleRequestUploadURL(c *gin.Context) {
 		"user_avatar":   true,
 		"artist_avatar": true,
 		"opera_cover":   true,
+		"news_cover":    true,
 		"video_upload":  true,
 	}
 	if !validTypes[input.UploadType] {
-		resp.BadRequest(c, "Invalid upload_type. Must be 'user_avatar', 'artist_avatar', 'opera_cover', or 'video_upload'")
+		resp.BadRequest(c, "Invalid upload_type. Must be 'user_avatar', 'artist_avatar', 'opera_cover', 'news_cover', or 'video_upload'")
 		return
 	}
 

@@ -76,6 +76,13 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			artists.GET("/:id", HandleGetArtistByID)
 		}
 
+		// 新闻资讯路由 (News)
+		news := v1.Group("/news")
+		{
+			news.GET("/", HandleGetNews)
+			news.GET("/:id", HandleGetNewsByID)
+		}
+
 		// 评论路由 (Comments)
 		comments := v1.Group("/comments")
 		comments.Use(middleware.AuthMiddleware())
@@ -131,6 +138,12 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			admin.DELETE("/artists/:id", HandleAdminDeleteArtist)
 			admin.GET("/users", HandleAdminGetUsers)
 			admin.PUT("/users/:id/role", HandleAdminUpdateUserRole)
+
+			admin.GET("/news", HandleAdminGetNews)
+			admin.POST("/news", HandleAdminCreateNews)
+			admin.GET("/news/:id", HandleAdminGetNewsByID)
+			admin.PUT("/news/:id", HandleAdminUpdateNews)
+			admin.DELETE("/news/:id", HandleAdminDeleteNews)
 
 			// 搜索管理路由
 			adminSearch := admin.Group("/search")

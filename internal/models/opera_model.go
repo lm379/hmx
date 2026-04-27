@@ -162,8 +162,8 @@ type ArtistResponse struct {
 type PresignRequest struct {
 	Filename    string `json:"filename" binding:"required"`
 	ContentType string `json:"content_type" binding:"required"`
-	UploadType  string `json:"upload_type" binding:"required"` // 'user_avatar', 'artist_avatar', 'opera_cover', 'video_upload'
-	TargetID    uint   `json:"target_id"`                      // 目标ID：用户ID、艺术家ID或曲目ID (video_upload时可为0)
+	UploadType  string `json:"upload_type" binding:"required"` // 'user_avatar', 'artist_avatar', 'opera_cover', 'news_cover', 'video_upload'
+	TargetID    uint   `json:"target_id"`                      // 目标ID：用户ID、艺术家ID或曲目ID；news_cover/video_upload 可为0
 }
 
 // PresignResponse DTO
