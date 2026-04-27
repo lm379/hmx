@@ -1,4 +1,4 @@
-import { computed, defineComponent, ref, onMounted, type Ref } from 'vue';
+import { defineComponent, ref, onMounted, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
 import VideoCard from '../../components/VideoCard.vue';
 import Pagination from '../../components/Pagination.vue';
@@ -10,7 +10,6 @@ type RecommendationChannel = 'for_you' | 'hot' | 'latest';
 interface ChannelOption {
   key: RecommendationChannel;
   label: string;
-  description: string;
 }
 
 export default defineComponent({
@@ -29,26 +28,19 @@ export default defineComponent({
     const activeChannel = ref<RecommendationChannel>('for_you');
     const defaultChannel: ChannelOption = {
       key: 'for_you',
-      label: '为你推荐',
-      description: '结合观看、点赞和收藏记录，为你挑选可能感兴趣的黄梅戏内容'
+      label: '为你推荐'
     };
     const channels: ChannelOption[] = [
       defaultChannel,
       {
         key: 'hot',
-        label: '热门',
-        description: '按播放、点赞、收藏等互动热度排序，发现大家正在看的作品'
+        label: '热门'
       },
       {
         key: 'latest',
-        label: '最新',
-        description: '查看平台最新收录的黄梅戏作品'
+        label: '最新'
       }
     ];
-
-    const activeChannelInfo = computed(() => {
-      return channels.find(channel => channel.key === activeChannel.value) || defaultChannel;
-    });
 
     const fetchOperas = async (page = 1) => {
       try {
@@ -130,7 +122,6 @@ export default defineComponent({
       pageSize,
       totalItems,
       activeChannel,
-      activeChannelInfo,
       channels,
       fetchOperas,
       navigateToVideo,

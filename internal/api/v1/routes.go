@@ -83,6 +83,13 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			news.GET("/:id", HandleGetNewsByID)
 		}
 
+		// 黄梅教育路由 (Education)
+		education := v1.Group("/education")
+		{
+			education.GET("/books", HandleGetEducationBooks)
+			education.GET("/books/:id", HandleGetEducationBookByID)
+		}
+
 		// 评论路由 (Comments)
 		comments := v1.Group("/comments")
 		comments.Use(middleware.AuthMiddleware())
@@ -144,6 +151,12 @@ func SetupRouter(staticFiles *embed.FS) *gin.Engine {
 			admin.GET("/news/:id", HandleAdminGetNewsByID)
 			admin.PUT("/news/:id", HandleAdminUpdateNews)
 			admin.DELETE("/news/:id", HandleAdminDeleteNews)
+
+			admin.GET("/education/books", HandleAdminGetEducationBooks)
+			admin.POST("/education/books", HandleAdminCreateEducationBook)
+			admin.GET("/education/books/:id", HandleAdminGetEducationBookByID)
+			admin.PUT("/education/books/:id", HandleAdminUpdateEducationBook)
+			admin.DELETE("/education/books/:id", HandleAdminDeleteEducationBook)
 
 			// 搜索管理路由
 			adminSearch := admin.Group("/search")

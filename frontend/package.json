@@ -18,6 +18,7 @@
     "dplayer": "^1.27.1",
     "element-plus": "^2.13.0",
     "marked": "^17.0.4",
+    "pdfjs-dist": "^5.6.205",
     "pinia": "^3.0.4",
     "vue": "^3.4.19",
     "vue-router": "^4.6.4"

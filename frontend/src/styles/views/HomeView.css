@@ -6,28 +6,8 @@
 
 .recommend-header {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.recommend-title-group {
-  min-width: 0;
-}
-
-.recommend-title {
-  margin: 0 0 6px;
-  color: #18191c;
-  font-size: 24px;
-  line-height: 32px;
-  font-weight: 700;
-}
-
-.recommend-subtitle {
-  margin: 0;
-  color: #61666d;
-  font-size: 14px;
-  line-height: 20px;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .channel-tabs {
@@ -114,8 +94,6 @@
 @media (max-width: 800px) {
   .recommend-header {
     align-items: stretch;
-    flex-direction: column;
-    gap: 14px;
   }
 
   .channel-tabs {

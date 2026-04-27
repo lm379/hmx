@@ -54,6 +54,18 @@ const routes: Array<RouteRecordRaw> = [
     meta: { showCategoryBar: true }
   },
   {
+    path: '/education',
+    name: 'Education',
+    component: () => import('../views/EducationListView.vue'),
+    meta: { showCategoryBar: true }
+  },
+  {
+    path: '/education/:id',
+    name: 'EducationReader',
+    component: () => import('../views/EducationReaderView.vue'),
+    meta: { showCategoryBar: true }
+  },
+  {
     path: '/search',
     name: 'Search',
     component: () => import('../views/SearchView.vue'),
@@ -123,6 +135,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'news',
         name: '新闻管理',
         component: () => import('../views/admin/NewsManager.vue')
+      },
+      {
+        path: 'education',
+        name: '黄梅教育',
+        component: () => import('../views/admin/EducationManager.vue')
       }
     ]
   },

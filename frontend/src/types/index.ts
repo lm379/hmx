@@ -205,3 +205,18 @@ export interface NewsListItem {
 export interface NewsDetail extends NewsListItem {
     content: string;
 }
+
+export interface EducationBookListItem {
+    book_id: number;
+    title: string;
+    description: string;
+    pdf_path: string;
+    pdf_url: string;
+    cover_path: string;
+    cover_url?: string;
+    is_published: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface EducationBookDetail extends EducationBookListItem {}

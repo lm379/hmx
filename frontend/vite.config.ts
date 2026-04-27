@@ -5,6 +5,11 @@ import svgLoader from 'vite-svg-loader'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue(), svgLoader()],
+  optimizeDeps: {
+    // PDF.js 体积大且带 worker，开发环境预构建容易卡在 /node_modules/.vite/deps/pdfjs-dist.js。
+    // 让浏览器直接按 ESM 加载具体 build 文件，避免点击 PDF 时 504。
+    exclude: ['pdfjs-dist']
+  },
   server: {
     proxy: {
       '/api': {

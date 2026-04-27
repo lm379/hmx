@@ -1,0 +1,161 @@
+.education-reader-view {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+}
+
+.reader-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.back-btn,
+.open-link,
+.zoom-btn {
+  border: 1px solid #e3e5e7;
+  background: #fff;
+  color: #61666d;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.back-btn:hover,
+.open-link:hover,
+.zoom-btn:hover {
+  color: #a40000;
+  border-color: rgba(164, 0, 0, 0.35);
+}
+
+.reader-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-label {
+  min-width: 46px;
+  text-align: center;
+  color: #61666d;
+  font-size: 13px;
+}
+
+.reader-title-group {
+  min-width: 0;
+}
+
+.reader-title {
+  margin: 0;
+  color: #18191c;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.reader-desc {
+  margin: 4px 0 0;
+  color: #61666d;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.pdf-status {
+  margin-bottom: 12px;
+  color: #61666d;
+  font-size: 13px;
+}
+
+.pdf-status.error {
+  color: #a40000;
+}
+
+.pdf-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.pdf-page-shell {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 0 18px;
+  border: 1px solid #e3e5e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.page-label {
+  width: min(100%, 920px);
+  margin: 0 auto 10px;
+  color: #9499a0;
+  font-size: 12px;
+}
+
+.page-canvas-wrap {
+  position: relative;
+  min-height: 520px;
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-canvas {
+  display: block;
+  max-width: none;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.page-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9499a0;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.page-placeholder.error {
+  color: #a40000;
+}
+
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 48px 0;
+  color: #9499a0;
+}
+
+@media (max-width: 767px) {
+  .education-reader-view {
+    padding: 12px 12px 32px;
+  }
+
+  .reader-header {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .reader-actions {
+    flex-wrap: wrap;
+  }
+
+  .reader-title {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .pdf-page-shell {
+    padding: 10px 0 14px;
+  }
+
+  .page-canvas-wrap {
+    min-height: 420px;
+  }
+}

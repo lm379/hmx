@@ -19,19 +19,27 @@ func HandleRequestUploadURL(c *gin.Context) {
 
 	// 验证 uploadType
 	validTypes := map[string]bool{
-		"user_avatar":   true,
-		"artist_avatar": true,
-		"opera_cover":   true,
-		"news_cover":    true,
-		"video_upload":  true,
+		"user_avatar":     true,
+		"artist_avatar":   true,
+		"opera_cover":     true,
+		"news_cover":      true,
+		"education_pdf":   true,
+		"education_cover": true,
+		"video_upload":    true,
 	}
 	if !validTypes[input.UploadType] {
-		resp.BadRequest(c, "Invalid upload_type. Must be 'user_avatar', 'artist_avatar', 'opera_cover', 'news_cover', or 'video_upload'")
+		resp.BadRequest(c, "Invalid upload_type. Must be 'user_avatar', 'artist_avatar', 'opera_cover', 'news_cover', 'education_pdf', 'education_cover', or 'video_upload'")
 		return
 	}
 
 	// 验证 ContentType
-	if input.UploadType == "video_upload" {
+	if input.UploadType == "education_pdf" {
+		// 教育资源只允许上传 PDF，避免前台阅读器加载非预期文件。
+		if input.ContentType != "application/pdf" {
+			resp.BadRequest(c, "Invalid content_type for education_pdf. Must be application/pdf.")
+			return
+		}
+	} else if input.UploadType == "video_upload" {
 		// 视频类型必须是video/*
 		if len(input.ContentType) < 6 || input.ContentType[:6] != "video/" {
 			resp.BadRequest(c, "Invalid content_type for video. Must be a video.")

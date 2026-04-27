@@ -1,10 +1,6 @@
 <template>
   <div class="home-view">
     <section class="recommend-header">
-      <div class="recommend-title-group">
-        <h2 class="recommend-title">内容推荐</h2>
-        <p class="recommend-subtitle">{{ activeChannelInfo.description }}</p>
-      </div>
       <div class="channel-tabs" role="tablist" aria-label="首页推荐频道">
         <button
           v-for="channel in channels"
