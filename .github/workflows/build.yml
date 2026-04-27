@@ -84,7 +84,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
           cache: true
 
       - name: Build binary
@@ -143,7 +143,7 @@ jobs:
             3. 运行 `./hmx` (Linux/macOS) 或 `hmx.exe` (Windows)
             
             ### ⚙️ 编译信息
-            - Go 版本: 1.24
+            - Go 版本: 1.25
             - 构建时间: ${{ github.event.head_commit.timestamp }}
             - Commit: ${{ github.sha }}
         env:
@@ -208,7 +208,7 @@ jobs:
             3. 运行 `./hmx` (Linux/macOS) 或 `hmx.exe` (Windows)
             
             ### ⚙️ 编译信息
-            - Go 版本: 1.24
+            - Go 版本: 1.25
             - 构建时间: ${{ github.event.head_commit.timestamp }}
             - Commit: ${{ github.sha }}
           draft: false

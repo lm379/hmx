@@ -14,7 +14,7 @@ COPY frontend/ ./
 RUN pnpm run build
 
 # 构建后端
-FROM golang:1.24-alpine AS backend-builder
+FROM golang:1.25-alpine AS backend-builder
 
 WORKDIR /app
 
@@ -36,7 +36,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o hmx \
     ./cmd/server/main.go
 
-FROM golang:1.24-alpine
+FROM golang:1.25-alpine
 
 RUN apk add --no-cache ca-certificates tzdata
 
